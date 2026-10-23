@@ -14,6 +14,15 @@
 | 10 | `projects.methodology_id/version` are plain nullable text | The `methodologies` table waits for the methodology decision gate. |
 | 11 | No PostGIS, pgvector, queue or worker yet | Not needed by the implemented slice. |
 
+| 12 | Phase A tables: documents, parsed_units, evidence_refs, parameter_values, jobs, methodologies, parameter_defs. Rules, runs, findings and reviews wait for Phase B | Their shape depends on the rule format and run snapshot. |
+| 13 | Documents, parsed text, evidence refs and parameter values are append-only; status and review fields are the only mutable columns | Evidence must not change under a finding. Corrections are new rows that point at what they replace. |
+| 14 | Storage path is `<org_id>/sha256/<hash>` and the database enforces it | Per-tenant content addressing; no cross-tenant "already uploaded" signal. |
+| 15 | Users only read the Phase A tables; the worker writes them | Hashing and parsing must happen on a trusted path. User-facing writes arrive later as audited RPC functions. |
+| 16 | Job queue is a Postgres table claimed with `FOR UPDATE SKIP LOCKED`, with backoff, dead state and stale-lock recovery | No separate queue needed at this scale. |
+| 17 | A value feeds calculations only through `authoritative_values` (reviewed or auto-accepted, not replaced) | Uncertain extractions cannot silently pass into a calculation. |
+| 18 | Scanned PDFs end as `needs_ocr`, encrypted or corrupted files as `failed`; neither is guessed at | Wrong is worse than missing. |
+| 19 | Excel midnight datetimes display as plain dates; formulas with no saved value are flagged, never computed | Values come from what the file stores. |
+
 ## Open decisions
 - First methodology and customer (BM EN01.001, AMS-I.D, ACM0002 are candidates only).
 - Hosting for the Python worker.
