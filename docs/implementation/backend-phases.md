@@ -161,7 +161,7 @@ A then B then C, with the methodology gate in parallel. Each phase ends at a rev
 
 ## Phase B status (2026-10-23)
 
-Built and tested locally; migration `...000400_runs_findings.sql` is written but **not yet applied** to the remote project.
+Built and tested locally. Migration `...000400_runs_findings.sql` is applied to the `climateG` project (recorded as `runs_findings`), the TEST-ONLY seed is loaded, and a 22-check run against the live database passed (worker SQL as `service_role`; review, manual-entry and run functions as real users; all in a rolled-back transaction).
 
 - **Parsing helpers:** strict number parsing (western and Indian grouping, decimal commas refused), strict dates (ambiguous day/month refused), exact unit conversion with an allowlist of spellings.
 - **Rule engine:** nine fixed operations, rulepacks as validated JSON with a content hash, deterministic results (byte-identical across input orderings), values must be reviewed and carry evidence or the snapshot is refused. The only rulepack is `rulepacks/test-only-0.1.0.json`, labelled TEST ONLY.
