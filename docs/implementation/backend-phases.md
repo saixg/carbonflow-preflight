@@ -32,7 +32,7 @@ Repo layout to add: `worker/carbonflow/` (package), `worker/tests/`, `rulepacks/
 
 ## Phase A: Evidence spine
 
-**Status (2026-10-23):** migrations `...000200_evidence_spine.sql` and `...000300_storage.sql`, the worker's parsers, ingest, job queue and pipeline are written with tests. Not applied to the remote project. Adjustments made while building, all deliberate:
+**Status (2026-10-23):** migrations `...000200_evidence_spine.sql` and `...000300_storage.sql` are applied to the `climateG` project (recorded remotely as `evidence_spine` and `storage_documents_bucket`) and passed a 16-check integration run against the real database and storage schema, executed in a rolled-back transaction. The worker's parsers, ingest, job queue and pipeline are written with tests, but `PsycopgRepo` and `SupabaseStorage` have not yet run against the live project. Adjustments made while building, all deliberate:
 
 - Tables for rulepacks, rules, runs, findings, reviews and emission claims move to the Phase B migration, where their shape (rule format, run snapshot) is decided. Designing them now would have been guesswork.
 - Content-addressed paths are per tenant (`<org_id>/sha256/<hash>`). A global path would let one tenant learn whether another already uploaded the same file.
