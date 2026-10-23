@@ -158,3 +158,14 @@ One methodology candidate, one monitoring workflow, a limited set of evidence-ba
 ## Sequencing and size
 
 A then B then C, with the methodology gate in parallel. Each phase ends at a review point, with migrations shown to you before any remote apply, as before.
+
+## Phase B status (2026-10-23)
+
+Built and tested locally; migration `...000400_runs_findings.sql` is written but **not yet applied** to the remote project.
+
+- **Parsing helpers:** strict number parsing (western and Indian grouping, decimal commas refused), strict dates (ambiguous day/month refused), exact unit conversion with an allowlist of spellings.
+- **Rule engine:** nine fixed operations, rulepacks as validated JSON with a content hash, deterministic results (byte-identical across input orderings), values must be reviewed and carry evidence or the snapshot is refused. The only rulepack is `rulepacks/test-only-0.1.0.json`, labelled TEST ONLY.
+- **Extraction:** a model proposes quotes; the document is the judge (quote must exist, value and unit must sit inside it). Three passes plus an independent check; auto-accept is off by default. Provider is OpenAI over plain HTTP with a pinned model, bounded retries and strict schemas, tested against a mock transport only.
+- **Database:** runs, findings and their evidence links are append-only once a run finishes; users can enter values, review values (confirm, reject, correct with a comment) and request runs through audited functions that check the caller's role in the row's own organization.
+- **Orchestration:** `parse_document` queues `extract_document` when a provider is configured; `run_preflight` freezes inputs, runs the rules and stores findings in one transaction, or marks the run failed.
+- **Verification so far:** 65 database tests (PGlite) and 122 worker tests. The worker's SQL lives in `carbonflow/sql.py` so the same statements can be run against a real database.

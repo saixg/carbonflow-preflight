@@ -1,0 +1,104 @@
+{
+  "rulepack": {
+    "id": "test-only",
+    "version": "0.1.0",
+    "label": "TEST ONLY: synthetic rules for exercising the engine. Not a methodology and not a compliance check.",
+    "test_only": true,
+    "methodology": { "code": "TEST-ONLY", "version": "0.1" }
+  },
+  "rules": [
+    {
+      "code": "T-PRES-001", "category": "completeness", "severity": "critical", "finding_type": "data_quality",
+      "title": "Net electricity exported is missing", "op": "present",
+      "params": { "parameter": "net_export_mwh" },
+      "message": "No reviewed value was found for net electricity exported. {detail}",
+      "remediation": "Provide the net exported electricity for the monitoring period, with its source document.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-PRES-002", "category": "completeness", "severity": "critical", "finding_type": "data_quality",
+      "title": "Monitoring period start date is missing", "op": "present",
+      "params": { "parameter": "period_start" },
+      "message": "No reviewed monitoring period start date was found. {detail}",
+      "remediation": "Provide the start date as stated in the monitoring report.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-PRES-003", "category": "completeness", "severity": "critical", "finding_type": "data_quality",
+      "title": "Monitoring period end date is missing", "op": "present",
+      "params": { "parameter": "period_end" },
+      "message": "No reviewed monitoring period end date was found. {detail}",
+      "remediation": "Provide the end date as stated in the monitoring report.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-DATE-001", "category": "dates", "severity": "critical", "finding_type": "data_quality",
+      "title": "Period end is not after period start", "op": "date_order",
+      "params": { "first": "period_start", "second": "period_end" },
+      "message": "The period dates are out of order. Observed {observed}.",
+      "remediation": "Check the dates in the source document and correct the extracted values.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-DATE-002", "category": "dates", "severity": "material", "finding_type": "inconsistency",
+      "title": "Document period differs from the monitoring period", "op": "period_matches",
+      "params": { "start_parameter": "period_start", "end_parameter": "period_end" },
+      "message": "{subject} in the document is {observed} but the monitoring period has {expected}.",
+      "remediation": "Align the monitoring period with the document, or confirm which one is right.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-UNIT-001", "category": "units", "severity": "material", "finding_type": "data_quality",
+      "title": "Net electricity exported has an unsuitable unit", "op": "unit_compatible",
+      "params": { "parameter": "net_export_mwh" },
+      "message": "Unit check failed. Observed {observed}, expected {expected}.",
+      "remediation": "Use an energy unit such as MWh or kWh and state it next to the figure.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-UNIT-002", "category": "units", "severity": "material", "finding_type": "data_quality",
+      "title": "Emission factor has an unsuitable unit", "op": "unit_compatible",
+      "params": { "parameter": "grid_emission_factor" },
+      "message": "Unit check failed. Observed {observed}, expected {expected}.",
+      "remediation": "State the factor as tonnes of CO2 per MWh, or a unit that converts to it.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-RANGE-001", "category": "plausibility", "severity": "material", "finding_type": "data_quality",
+      "title": "Installed capacity is outside the test range", "op": "in_range",
+      "params": { "parameter": "installed_capacity_mw", "min": "0.001", "max": "5000" },
+      "message": "Installed capacity {observed} is outside {expected}.",
+      "remediation": "Confirm the capacity figure and its unit in the source document.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-CONS-001", "category": "consistency", "severity": "critical", "finding_type": "inconsistency",
+      "title": "Documents disagree on net electricity exported", "op": "agree_within",
+      "params": { "parameter": "net_export_mwh", "rel_tol": "0.001" },
+      "message": "Reviewed values for net electricity exported differ: {observed}.",
+      "remediation": "Find which document is correct and correct or explain the other.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-CALC-001", "category": "calculation", "severity": "critical", "finding_type": "calculation_mismatch",
+      "title": "Monthly exports do not add up to the reported total", "op": "sums_to",
+      "params": { "parts": "monthly_export_mwh", "total": "net_export_mwh", "rel_tol": "0.0005" },
+      "message": "The monthly values do not match the reported total. Observed {observed}.",
+      "remediation": "Reconcile the monthly meter readings with the reported total.",
+      "basis": "internal_heuristic"
+    },
+    {
+      "code": "T-CALC-002", "category": "calculation", "severity": "critical", "finding_type": "calculation_mismatch",
+      "title": "Claimed emission reductions do not match the recomputation", "op": "recompute_matches",
+      "params": {
+        "calc": "product",
+        "inputs": { "a": "net_export_mwh", "b": "grid_emission_factor" },
+        "claimed": "claimed_emission_reductions_tco2",
+        "rel_tol": "0.0005"
+      },
+      "message": "The claimed figure {observed} differs from the recomputed {expected}.",
+      "remediation": "Check the inputs and the arithmetic in the report.",
+      "basis": "internal_heuristic"
+    }
+  ]
+}

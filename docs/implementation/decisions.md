@@ -22,7 +22,11 @@
 | 17 | A value feeds calculations only through `authoritative_values` (reviewed or auto-accepted, not replaced) | Uncertain extractions cannot silently pass into a calculation. |
 | 18 | Scanned PDFs end as `needs_ocr`, encrypted or corrupted files as `failed`; neither is guessed at | Wrong is worse than missing. |
 | 19 | Excel midnight datetimes display as plain dates; formulas with no saved value are flagged, never computed | Values come from what the file stores. |
-
+| 20 | Values carry `normalized_date` for date fields; number and date are mutually exclusive | Date parameters need a typed value, not text. |
+| 21 | `parameter_defs.multiple_values` marks fields where repeated different values are normal | A single-valued field with two different values becomes `conflicting`, never a silent pick. |
+| 22 | Auto-accept is off until extraction precision is measured at 95% or better on labelled documents | Matches the provisional quality gate. |
+| 23 | Review and manual entry are database functions that check the caller's role in the row's own org | They run with elevated rights, so they cannot trust the caller's claims. |
+| 24 | A model outage retries the extraction job; a missing rulepack or unsupported file does not | Only failures that can fix themselves are retried. |
 ## Open decisions
 - First methodology and customer (BM EN01.001, AMS-I.D, ACM0002 are candidates only).
 - Hosting for the Python worker.

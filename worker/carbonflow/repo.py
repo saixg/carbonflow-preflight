@@ -7,7 +7,7 @@ one tenant cannot read or write another tenant's rows.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol
 
 import psycopg
@@ -53,6 +53,7 @@ class Job:
     kind: str
     attempts: int
     max_attempts: int
+    payload: dict = field(default_factory=dict)
 
 
 class Repo(Protocol):
@@ -165,7 +166,7 @@ class PsycopgRepo:
                 return None
             return Job(str(r["id"]), str(r["org_id"]),
                        str(r["document_id"]) if r["document_id"] else None,
-                       r["kind"], r["attempts"], r["max_attempts"])
+                       r["kind"], r["attempts"], r["max_attempts"], r["payload"] or {})
 
         return self._run(go)
 
