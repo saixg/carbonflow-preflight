@@ -19,7 +19,7 @@ const ITEMS = [
   { href: "/team", label: "Team", icon: Users },
 ];
 
-export function Sidebar({ orgName, email }: { orgName: string; email: string }) {
+export function Sidebar({ orgName, email, guest }: { orgName: string; email: string; guest: boolean }) {
   const path = usePathname();
   return (
     <aside className="side">
@@ -36,9 +36,13 @@ export function Sidebar({ orgName, email }: { orgName: string; email: string }) 
         <span className="avatar">{email.slice(0, 1).toUpperCase()}</span>
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{orgName}</div>
-          <form action={signOutAction}>
-            <button className="hint" style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}>Sign out</button>
-          </form>
+          {guest ? (
+            <span className="hint">Sign-in is off</span>
+          ) : (
+            <form action={signOutAction}>
+              <button className="hint" style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}>Sign out</button>
+            </form>
+          )}
         </div>
       </div>
     </aside>

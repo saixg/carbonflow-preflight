@@ -5,23 +5,27 @@ import { greeting } from "@/lib/constants";
 import { CreateOrgForm } from "@/components/app/Forms";
 import { Donut } from "@/components/charts";
 import { CountUp, Reveal } from "@/components/motion";
-import { fmtDate, StatusChip, typeIcon } from "@/components/app/Bits";
+import { fmtDate, SampleBanner, StatusChip, typeIcon } from "@/components/app/Bits";
 
 export const metadata = { title: "Dashboard | CarbonFlow Preflight" };
 
 export default async function Dashboard() {
-  const { supabase, user, org } = await getSession();
+  const { supabase, user, org, guest } = await getSession();
   const first = (user.email ?? "there").split("@")[0];
 
   if (!org) {
     return (
       <div className="page">
-        <div className="page-h"><div><h1>{greeting()}, {first}</h1><p className="muted">Create an organization to start.</p></div></div>
-        <div className="card" style={{ display: "grid", gap: 16 }}>
-          <h2 style={{ fontSize: 18 }}>Set up your organization</h2>
-          <p className="muted" style={{ maxWidth: "52ch" }}>Projects, documents and findings belong to an organization. Only its members can see them.</p>
-          <CreateOrgForm />
-        </div>
+        <div className="page-h"><div><h1>{greeting()}, {first}</h1><p className="muted">{guest ? "Browse the screens while sign-in is turned off." : "Create an organization to start."}</p></div></div>
+        {guest ? (
+          <SampleBanner>Sign-in is turned off, so nothing can be saved yet. Open Findings, Documents or Reports in the sidebar to see the sample screens.</SampleBanner>
+        ) : (
+          <div className="card" style={{ display: "grid", gap: 16 }}>
+            <h2 style={{ fontSize: 18 }}>Set up your organization</h2>
+            <p className="muted" style={{ maxWidth: "52ch" }}>Projects, documents and findings belong to an organization. Only its members can see them.</p>
+            <CreateOrgForm />
+          </div>
+        )}
       </div>
     );
   }

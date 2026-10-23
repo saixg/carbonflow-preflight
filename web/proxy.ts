@@ -1,9 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { AUTH_ENABLED } from "@/lib/flags";
 
 const PROTECTED = ["/dashboard", "/projects", "/documents", "/periods", "/runs", "/findings", "/reports", "/team"];
 
 export async function proxy(request: NextRequest) {
+  if (!AUTH_ENABLED) return NextResponse.next();
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

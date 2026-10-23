@@ -8,12 +8,15 @@ import { PROJECT_TYPES } from "@/lib/constants";
 
 export type FormState = { error?: string; ok?: boolean } | undefined;
 
+const GUEST_MSG = "Sign-in is turned off, so changes cannot be saved yet.";
+
 const name = z.string().trim().min(1, "Enter a name.").max(200, "Use 200 characters or fewer.");
 
 export async function createOrgAction(_: FormState, fd: FormData): Promise<FormState> {
   const p = z.object({ name }).safeParse({ name: fd.get("name") });
   if (!p.success) return { error: p.error.issues[0].message };
-  const { supabase } = await getSession();
+  const { supabase, guest } = await getSession();
+  if (guest) return { error: GUEST_MSG };
   const { error } = await supabase.rpc("create_org", { p_name: p.data.name });
   if (error) return { error: "Could not create the organization. Try again." };
   revalidatePath("/", "layout");
@@ -39,7 +42,8 @@ export async function createProjectAction(_: FormState, fd: FormData): Promise<F
     methodology_version: (fd.get("methodology_version") as string) || undefined,
   });
   if (!p.success) return { error: p.error.issues[0].message };
-  const { supabase, org } = await getSession();
+  const { supabase, org, guest } = await getSession();
+  if (guest) return { error: GUEST_MSG };
   if (!org) return { error: "Create an organization first." };
   if (org.role === "viewer") return { error: "Viewers cannot create projects." };
 
@@ -69,7 +73,8 @@ export async function createPeriodAction(projectId: string, _: FormState, fd: Fo
   if (!p.success) return { error: p.error.issues[0].message };
   if (p.data.end_date < p.data.start_date) return { error: "The end date must be on or after the start date." };
 
-  const { supabase } = await getSession();
+  const { supabase, guest } = await getSession();
+  if (guest) return { error: GUEST_MSG };
   const { data: project } = await supabase.from("projects").select("org_id").eq("id", projectId).single();
   if (!project) return { error: "Project not found." };
 

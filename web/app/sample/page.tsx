@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Brand } from "@/components/landing/Sections";
 import { ReportView } from "@/components/app/ReportView";
 import { SampleBanner } from "@/components/app/Bits";
+import { AUTH_ENABLED } from "@/lib/flags";
 
 export const metadata = { title: "Sample report | CarbonFlow Preflight" };
 
@@ -11,7 +12,7 @@ export default function SampleReport() {
       <header className="lnav">
         <div className="wrap">
           <Brand />
-          <Link href="/login?mode=signup" className="btn btn-primary btn-sm">Get started</Link>
+          <Link href={AUTH_ENABLED ? "/login?mode=signup" : "/dashboard"} className="btn btn-primary btn-sm">Get started</Link>
         </div>
       </header>
       <main className="wrap" style={{ padding: "32px 24px 80px", display: "grid", gap: 20 }}>

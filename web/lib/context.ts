@@ -1,12 +1,18 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { AUTH_ENABLED } from "@/lib/flags";
 
 export type Org = { id: string; name: string; role: "owner" | "admin" | "member" | "viewer" };
 
 /** Signed-in user plus their first organization (null until they create one). */
 export const getSession = cache(async () => {
   const supabase = await createClient();
+
+  if (!AUTH_ENABLED) {
+    return { supabase, user: { id: "guest", email: "guest" }, org: null as Org | null, guest: true };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -22,6 +28,5 @@ export const getSession = cache(async () => {
   const m = data?.[0];
   const o = m ? (Array.isArray(m.orgs) ? m.orgs[0] : m.orgs) : null;
   const org: Org | null = m && o ? { id: o.id, name: o.name, role: m.role } : null;
-  return { supabase, user, org };
+  return { supabase, user: { id: user.id, email: user.email }, org, guest: false };
 });
-

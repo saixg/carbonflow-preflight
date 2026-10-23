@@ -1,10 +1,13 @@
+import { redirect } from "next/navigation";
 import { AuthForm } from "./AuthForm";
 import { Brand } from "@/components/landing/Sections";
 import Scene from "@/components/three/Scene";
+import { AUTH_ENABLED } from "@/lib/flags";
 
 export const metadata = { title: "Sign in | CarbonFlow Preflight" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ mode?: string }> }) {
+  if (!AUTH_ENABLED) redirect("/dashboard");
   const { mode } = await searchParams;
   return (
     <div className="auth">

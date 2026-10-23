@@ -9,6 +9,9 @@ import {
 } from "@phosphor-icons/react/ssr";
 import Scene from "@/components/three/Scene";
 import { Reveal, ScrollRail } from "@/components/motion";
+import { AUTH_ENABLED } from "@/lib/flags";
+
+const START = AUTH_ENABLED ? "/login?mode=signup" : "/dashboard";
 
 export function Brand() {
   return (
@@ -34,7 +37,7 @@ export function Nav() {
         </nav>
         <div className="acts">
           <Link href="/login" className="muted">Sign in</Link>
-          <Link href="/login?mode=signup" className="btn btn-primary btn-sm">Get started <ArrowRight size={14} weight="bold" /></Link>
+          <Link href={START} className="btn btn-primary btn-sm">Get started <ArrowRight size={14} weight="bold" /></Link>
         </div>
       </div>
     </header>
@@ -82,7 +85,7 @@ export function Hero() {
         </Reveal>
         <Reveal delay={0.2} y={16}>
           <div className="cta">
-            <Link href="/login?mode=signup" className="btn btn-primary btn-lg">Get started <ArrowRight size={16} weight="bold" /></Link>
+            <Link href={START} className="btn btn-primary btn-lg">Get started <ArrowRight size={16} weight="bold" /></Link>
             <Link href="/sample" className="btn btn-lg">View sample report</Link>
           </div>
         </Reveal>
@@ -244,7 +247,7 @@ export function FinalCta() {
         <ShieldCheck size={32} color="var(--accent)" />
         <h2>Run your first preflight.</h2>
         <p className="sub" style={{ marginTop: 0 }}>Create a project, add a monitoring period and bring your evidence.</p>
-        <Link href="/login?mode=signup" className="btn btn-primary btn-lg">Get started <ArrowRight size={16} weight="bold" /></Link>
+        <Link href={START} className="btn btn-primary btn-lg">Get started <ArrowRight size={16} weight="bold" /></Link>
       </Reveal>
     </section>
   );
@@ -255,7 +258,7 @@ export function Footer() {
     <footer className="foot">
       <div className="wrap">
         <p>CarbonFlow Preflight provides a preparedness assessment only. It is not a verification or certification, and it does not guarantee the issuance of carbon credits.</p>
-        <Link href="/login" className="muted"><UploadSimple size={14} style={{ verticalAlign: "-2px" }} /> Sign in</Link>
+        {AUTH_ENABLED && <Link href="/login" className="muted"><UploadSimple size={14} style={{ verticalAlign: "-2px" }} /> Sign in</Link>}
       </div>
     </footer>
   );
