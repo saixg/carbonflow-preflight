@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { UploadSimple, FileText } from "@phosphor-icons/react/ssr";
+import { FileText } from "@phosphor-icons/react/ssr";
 import { getSession } from "@/lib/context";
 import { Crumbs, fmtDate, SampleBanner, StatusChip } from "@/components/app/Bits";
 import { PeriodForm } from "@/components/app/Forms";
 import Scene from "@/components/three/Scene";
 import { FindingsList } from "@/components/app/FindingsList";
 import { EvidenceViewer } from "@/components/app/EvidenceViewer";
+import { DocumentUploader } from "@/components/app/DocumentUploader";
 import { sampleDocs } from "@/lib/sample";
 
 const TABS = [
@@ -30,6 +31,14 @@ export default async function ProjectPage({
   if (!project) notFound();
   const { data: periods } = await supabase.from("monitoring_periods").select("*").eq("project_id", projectId).order("start_date", { ascending: false });
   const canWrite = org?.role !== "viewer";
+
+  const { data: realDocs } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false });
+
+  const docsToDisplay = realDocs && realDocs.length > 0 ? realDocs : null;
 
   return (
     <div className="page">
@@ -81,29 +90,55 @@ export default async function ProjectPage({
 
       {tab === "documents" && (
         <div style={{ display: "grid", gap: 16 }}>
-          <SampleBanner>Upload is not built yet. The table below is sample data.</SampleBanner>
+          {!docsToDisplay && (
+            <SampleBanner>No documents uploaded yet for this project. Upload below or review sample reference files.</SampleBanner>
+          )}
           <div className="card" style={{ display: "grid", gridTemplateColumns: "minmax(0,1.2fr) minmax(0,1fr)", gap: 16, alignItems: "center" }}>
-            <div style={{ border: "1.5px dashed var(--line-strong)", borderRadius: 14, padding: 36, textAlign: "center", display: "grid", gap: 10, justifyItems: "center" }}>
-              <UploadSimple size={30} color="var(--accent)" />
-              <b>Drag and drop your documents here</b>
-              <span className="muted" style={{ fontSize: 13 }}>PDF, Excel or CSV, up to 50 MB each</span>
-              <button className="btn" disabled>Choose files</button>
+            <div>
+              <DocumentUploader
+                projectId={projectId}
+                periods={(periods ?? []).map((p) => ({ id: p.id, start_date: fmtDate(p.start_date), end_date: fmtDate(p.end_date) }))}
+              />
             </div>
             <div style={{ height: 240 }}><Scene kind="docs" /></div>
           </div>
           <div className="card">
-            <div className="card-h"><h2>Recently uploaded</h2></div>
+            <div className="card-h"><h2>Project Documents</h2></div>
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Status</th><th>Uploaded</th></tr></thead>
+              <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>Status</th><th>SHA-256 Digest</th><th>Uploaded</th></tr></thead>
               <tbody>
-                {sampleDocs.map((d) => (
-                  <tr key={d.name}>
-                    <td><FileText size={16} style={{ verticalAlign: "-3px", marginRight: 8 }} />{d.name}</td>
-                    <td>{d.type}</td><td className="mono">{d.size}</td>
-                    <td><span className={`chip ${d.status === "Processed" ? "ok" : d.status === "Processing" ? "info" : "warn"}`}>{d.status}</span></td>
-                    <td className="muted">{d.at}</td>
-                  </tr>
-                ))}
+                {docsToDisplay ? (
+                  docsToDisplay.map((d) => (
+                    <tr key={d.id}>
+                      <td><FileText size={16} style={{ verticalAlign: "-3px", marginRight: 8 }} />{d.filename}</td>
+                      <td>
+                        {d.media_type.includes("pdf") ? "PDF" : d.media_type.includes("spreadsheetml") ? "Excel" : "CSV"}
+                      </td>
+                      <td className="mono">
+                        {d.size_bytes < 1048576 ? `${(d.size_bytes / 1024).toFixed(1)} KB` : `${(d.size_bytes / 1048576).toFixed(1)} MB`}
+                      </td>
+                      <td>
+                        <span className={`chip ${d.processing_status === "processed" ? "ok" : d.processing_status === "processing" ? "info" : d.processing_status === "needs_ocr" ? "warn" : d.processing_status === "failed" ? "danger" : ""}`}>
+                          {d.processing_status}
+                        </span>
+                      </td>
+                      <td className="mono muted" style={{ fontSize: 12 }}>
+                        {d.sha256 ? `${d.sha256.slice(0, 8)}...${d.sha256.slice(-6)}` : "—"}
+                      </td>
+                      <td className="muted">{fmtDate(d.created_at)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  sampleDocs.map((d) => (
+                    <tr key={d.name}>
+                      <td><FileText size={16} style={{ verticalAlign: "-3px", marginRight: 8 }} />{d.name}</td>
+                      <td>{d.type}</td><td className="mono">{d.size}</td>
+                      <td><span className={`chip ${d.status === "Processed" ? "ok" : d.status === "Processing" ? "info" : "warn"}`}>{d.status}</span></td>
+                      <td className="mono muted" style={{ fontSize: 12 }}>sample_verified</td>
+                      <td className="muted">{d.at}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

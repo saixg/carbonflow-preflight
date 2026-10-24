@@ -89,3 +89,60 @@ export async function createPeriodAction(projectId: string, _: FormState, fd: Fo
   revalidatePath(`/projects/${projectId}`);
   return { ok: true };
 }
+
+const reviewSchema = z
+  .object({
+    finding_id: z.string().min(1, "Finding ID is required."),
+    action: z.enum(["acknowledge", "resolve", "dismiss", "reopen"]),
+    comment: z.string().trim().optional(),
+  })
+  .refine(
+    (v) => !["resolve", "dismiss"].includes(v.action) || (Boolean(v.comment) && (v.comment?.length ?? 0) >= 3),
+    { message: "Resolving or dismissing a finding requires a justification of at least 3 characters." }
+  );
+
+export async function reviewFindingAction(
+  findingId: string,
+  action: "acknowledge" | "resolve" | "dismiss" | "reopen",
+  comment?: string
+): Promise<{ ok?: boolean; error?: string; status?: string }> {
+  const parsed = reviewSchema.safeParse({ finding_id: findingId, action, comment });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0].message };
+  }
+
+  const { supabase, guest } = await getSession();
+  if (guest) {
+    const simStatus = action === "reopen" ? "open" : action === "acknowledge" ? "acknowledged" : action;
+    return { ok: true, status: simStatus };
+  }
+
+  const { data, error } = await supabase.rpc("review_finding", {
+    p_finding_id: parsed.data.finding_id,
+    p_action: parsed.data.action,
+    p_comment: parsed.data.comment || null,
+  });
+
+  if (error) {
+    return { error: error.message || "Failed to update finding status." };
+  }
+
+  revalidatePath("/findings");
+  revalidatePath("/reports");
+  revalidatePath("/runs");
+  return { ok: true, status: data };
+}
+
+export async function requestRunAction(periodId: string): Promise<{ ok?: boolean; error?: string; runId?: string }> {
+  const { supabase, guest } = await getSession();
+  if (guest) return { error: GUEST_MSG };
+
+  const { data, error } = await supabase.rpc("request_run", { p_period_id: periodId });
+  if (error) {
+    return { error: error.message || "Could not request a preflight run." };
+  }
+
+  revalidatePath("/runs");
+  revalidatePath("/projects");
+  return { ok: true, runId: data };
+}

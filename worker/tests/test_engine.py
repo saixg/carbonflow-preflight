@@ -249,3 +249,13 @@ def test_hash_changes_when_any_rule_changes():
     d = raw(); d["rules"][0]["remediation"] = "something else"
     assert parse_rulepack(d).content_hash != a.content_hash
     assert parse_rulepack(copy.deepcopy(raw())).content_hash == a.content_hash
+
+
+def test_acm0002_solar_rulepack_valid():
+    acm_path = Path(__file__).resolve().parents[2] / "rulepacks" / "acm0002-grid-solar-1.0.0.json"
+    pack = load_rulepack(acm_path)
+    assert pack.id == "acm0002-grid-solar"
+    assert pack.version == "1.0.0"
+    assert pack.test_only is False
+    assert len(pack.rules) >= 10
+    assert pack.content_hash and len(pack.content_hash) == 64

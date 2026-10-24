@@ -10,7 +10,11 @@ export const getSession = cache(async () => {
   const supabase = await createClient();
 
   if (!AUTH_ENABLED) {
-    return { supabase, user: { id: "guest", email: "guest" }, org: null as Org | null, guest: true };
+    const { data: demoOrg } = await supabase.from("orgs").select("id, name").order("created_at").limit(1).maybeSingle();
+    const guestOrg: Org | null = demoOrg
+      ? { id: demoOrg.id, name: demoOrg.name, role: "owner" }
+      : { id: "280286b2-3677-4743-949a-737d65d9cf35", name: "Gujarat Green Power Corp", role: "owner" };
+    return { supabase, user: { id: "3ce59c47-3089-45cc-9eb2-7d6d1156a12b", email: "lead.auditor@carbonflow.internal" }, org: guestOrg, guest: true };
   }
 
   const {

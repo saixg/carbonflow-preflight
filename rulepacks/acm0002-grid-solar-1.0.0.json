@@ -1,0 +1,175 @@
+{
+  "rulepack": {
+    "id": "acm0002-grid-solar",
+    "version": "1.0.0",
+    "label": "ACM0002: Grid-connected electricity generation from renewable sources (Solar PV)",
+    "test_only": false,
+    "methodology": {
+      "code": "ACM0002",
+      "version": "21.0"
+    }
+  },
+  "rules": [
+    {
+      "code": "ACM0002-PRES-001",
+      "category": "completeness",
+      "severity": "critical",
+      "finding_type": "data_quality",
+      "title": "Net electricity exported (EG_facility,y) is missing",
+      "op": "present",
+      "params": { "parameter": "net_export_mwh" },
+      "message": "No authoritative value found for net electricity exported to the grid (EG_facility,y). {detail}",
+      "remediation": "Provide net generation and export data substantiated by calibrated meter logs and utility billing receipts.",
+      "basis": "directly_sourced",
+      "clause_ref": "ACM0002 Section 5.1 (Monitoring Requirements)"
+    },
+    {
+      "code": "ACM0002-PRES-002",
+      "category": "completeness",
+      "severity": "critical",
+      "finding_type": "data_quality",
+      "title": "Grid emission factor (EF_grid,CM,y) is missing",
+      "op": "present",
+      "params": { "parameter": "grid_emission_factor" },
+      "message": "No authoritative value found for the combined margin grid emission factor (EF_grid,CM,y). {detail}",
+      "remediation": "Document the published CEA/national grid emission factor applied to the monitoring period with reference citation.",
+      "basis": "directly_sourced",
+      "clause_ref": "Tool 07 (Tool to calculate the emission factor for an electricity system)"
+    },
+    {
+      "code": "ACM0002-PRES-003",
+      "category": "completeness",
+      "severity": "critical",
+      "finding_type": "data_quality",
+      "title": "Monitoring period start date is missing",
+      "op": "present",
+      "params": { "parameter": "period_start" },
+      "message": "No verified start date recorded for this monitoring interval. {detail}",
+      "remediation": "State the exact start date on the monitoring cover page and reconciliation schedule.",
+      "basis": "directly_sourced",
+      "clause_ref": "CDM Project Standard for Monitoring, Section 6"
+    },
+    {
+      "code": "ACM0002-PRES-004",
+      "category": "completeness",
+      "severity": "critical",
+      "finding_type": "data_quality",
+      "title": "Monitoring period end date is missing",
+      "op": "present",
+      "params": { "parameter": "period_end" },
+      "message": "No verified end date recorded for this monitoring interval. {detail}",
+      "remediation": "State the exact end date covering the full monitoring cycle.",
+      "basis": "directly_sourced",
+      "clause_ref": "CDM Project Standard for Monitoring, Section 6"
+    },
+    {
+      "code": "ACM0002-DATE-001",
+      "category": "dates",
+      "severity": "critical",
+      "finding_type": "data_quality",
+      "title": "Monitoring period boundary dates inverted",
+      "op": "date_order",
+      "params": { "first": "period_start", "second": "period_end" },
+      "message": "The monitoring period end date does not follow the start date. Observed {observed}.",
+      "remediation": "Correct chronological dates across the monitoring report and meter records.",
+      "basis": "directly_sourced",
+      "clause_ref": "CDM Validation and Verification Standard"
+    },
+    {
+      "code": "ACM0002-DATE-002",
+      "category": "dates",
+      "severity": "material",
+      "finding_type": "inconsistency",
+      "title": "Reported document date span misaligned with monitoring period",
+      "op": "period_matches",
+      "params": { "start_parameter": "period_start", "end_parameter": "period_end" },
+      "message": "{subject} in the document is {observed} but the registered period is {expected}.",
+      "remediation": "Ensure all evidence spans cover the exact approved monitoring interval without truncation.",
+      "basis": "directly_sourced",
+      "clause_ref": "CDM Project Standard"
+    },
+    {
+      "code": "ACM0002-UNIT-001",
+      "category": "units",
+      "severity": "critical",
+      "finding_type": "data_quality",
+      "title": "Incompatible energy unit for net export",
+      "op": "unit_compatible",
+      "params": { "parameter": "net_export_mwh" },
+      "message": "Net export unit mismatch. Observed {observed}, expected canonical {expected}.",
+      "remediation": "Report export figures in MWh (or clearly state conversion factor from kWh/GWh).",
+      "basis": "directly_sourced",
+      "clause_ref": "ACM0002 Unit Requirements"
+    },
+    {
+      "code": "ACM0002-UNIT-002",
+      "category": "units",
+      "severity": "material",
+      "finding_type": "data_quality",
+      "title": "Incompatible unit for grid emission factor",
+      "op": "unit_compatible",
+      "params": { "parameter": "grid_emission_factor" },
+      "message": "Emission factor unit mismatch. Observed {observed}, expected canonical {expected}.",
+      "remediation": "Express emission factor as tCO2/MWh (or kgCO2/MWh with stated conversion).",
+      "basis": "directly_sourced",
+      "clause_ref": "Tool 07"
+    },
+    {
+      "code": "ACM0002-RANGE-001",
+      "category": "plausibility",
+      "severity": "material",
+      "finding_type": "data_quality",
+      "title": "Installed capacity outside plausible boundaries",
+      "op": "in_range",
+      "params": { "parameter": "installed_capacity_mw", "min": "0.1", "max": "2500" },
+      "message": "Installed capacity {observed} is outside expected grid-scale envelope {expected}.",
+      "remediation": "Confirm nameplate DC capacity and grid interconnection inverter limit against the PPA.",
+      "basis": "internal_heuristic",
+      "clause_ref": "Engineering Plausibility Review"
+    },
+    {
+      "code": "ACM0002-CONS-001",
+      "category": "consistency",
+      "severity": "critical",
+      "finding_type": "inconsistency",
+      "title": "Cross-document discrepancy in net exported electricity",
+      "op": "agree_within",
+      "params": { "parameter": "net_export_mwh", "rel_tol": "0.001" },
+      "message": "Conflicting values extracted across source documents for net export: {observed}.",
+      "remediation": "Reconcile discrepancies between plant SCADA, Joint Meter Readings (JMR), and state utility invoices.",
+      "basis": "derived",
+      "clause_ref": "Reconciliation Protocol (Dual-Meter Verification)"
+    },
+    {
+      "code": "ACM0002-CALC-001",
+      "category": "calculation",
+      "severity": "critical",
+      "finding_type": "calculation_mismatch",
+      "title": "Monthly meter readings do not reconcile with annual total",
+      "op": "sums_to",
+      "params": { "parts": "monthly_export_mwh", "total": "net_export_mwh", "rel_tol": "0.0005" },
+      "message": "The sum of 12 monthly meter readings does not match annual reported net export. Observed {observed}.",
+      "remediation": "Correct monthly aggregation errors or identify unmetered transmission losses.",
+      "basis": "derived",
+      "clause_ref": "ACM0002 Equation (1)"
+    },
+    {
+      "code": "ACM0002-CALC-002",
+      "category": "calculation",
+      "severity": "critical",
+      "finding_type": "calculation_mismatch",
+      "title": "Claimed emission reductions deviate from recomputation",
+      "op": "recompute_matches",
+      "params": {
+        "calc": "product",
+        "inputs": { "a": "net_export_mwh", "b": "grid_emission_factor" },
+        "claimed": "claimed_emission_reductions_tco2",
+        "rel_tol": "0.0005"
+      },
+      "message": "Claimed emission reductions {observed} do not equal EG_export * EF_grid {expected}.",
+      "remediation": "Recalculate baseline emissions using verified net generation and published CEA emission factor.",
+      "basis": "derived",
+      "clause_ref": "ACM0002 Equation (11)"
+    }
+  ]
+}

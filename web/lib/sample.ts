@@ -13,6 +13,7 @@ export type SampleFinding = {
   detail: string;
   sources: number;
   remediation: string;
+  review_comment?: string;
 };
 
 export const sampleFindings: SampleFinding[] = [
@@ -23,10 +24,11 @@ export const sampleFindings: SampleFinding[] = [
     sources: 3, remediation: "Reconcile the report total with the monthly meter log and correct whichever figure is wrong.",
   },
   {
-    id: "f2", rule: "DATE-004", severity: "critical", status: "open",
+    id: "f2", rule: "DATE-004", severity: "critical", status: "resolved",
     title: "Gap in meter data coverage",
     detail: "No readings were found for 14 to 19 March 2023. Monitoring periods must be covered without gaps.",
     sources: 2, remediation: "Attach the missing readings or document the outage with supporting evidence.",
+    review_comment: "Plant maintenance log and grid operator outage memo attached. Verified zero generation during maintenance window.",
   },
   {
     id: "f3", rule: "DOC-002", severity: "critical", status: "acknowledged",

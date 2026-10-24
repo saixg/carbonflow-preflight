@@ -30,10 +30,12 @@ export default async function Dashboard() {
     );
   }
 
-  const [{ data: projects }, { data: periods }, { data: events }] = await Promise.all([
+  const [{ data: projects }, { data: periods }, { data: events }, { count: docCount }, { count: findingCount }] = await Promise.all([
     supabase.from("projects").select("id, name, project_type, status, methodology_id, methodology_version").order("created_at", { ascending: false }),
     supabase.from("monitoring_periods").select("id, project_id, start_date, end_date, status"),
     supabase.from("audit_log").select("id, action, entity_type, created_at").order("id", { ascending: false }).limit(6),
+    supabase.from("documents").select("id", { count: "exact", head: true }),
+    supabase.from("findings").select("id", { count: "exact", head: true }).eq("status", "open"),
   ]);
   const list = projects ?? [];
   const per = periods ?? [];
@@ -43,15 +45,15 @@ export default async function Dashboard() {
   const kpis = [
     { l: "Projects", v: list.length, live: true, e: "In your organization" },
     { l: "Monitoring periods", v: per.length, live: true, e: `${open} open` },
-    { l: "Documents", v: null, e: "Upload arrives next" },
-    { l: "Open findings", v: null, e: "Rules arrive later" },
+    { l: "Documents", v: docCount ?? 0, live: true, e: "Content addressed" },
+    { l: "Open findings", v: findingCount ?? 0, live: true, e: "Require review" },
   ];
   const phases = [
     ["Projects and monitoring periods", true],
-    ["Document upload and hashing", false],
-    ["Evidence-backed extraction", false],
-    ["Rules and findings", false],
-    ["Reports and evidence pack", false],
+    ["Document upload and hashing", true],
+    ["Evidence-backed extraction", true],
+    ["Rules and findings lifecycle", true],
+    ["Reports and evidence package export", true],
   ] as const;
 
   return (

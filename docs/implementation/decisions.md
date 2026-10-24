@@ -27,7 +27,9 @@
 | 22 | Auto-accept is off until extraction precision is measured at 95% or better on labelled documents | Matches the provisional quality gate. |
 | 23 | Review and manual entry are database functions that check the caller's role in the row's own org | They run with elevated rights, so they cannot trust the caller's claims. |
 | 24 | A model outage retries the extraction job; a missing rulepack or unsupported file does not | Only failures that can fix themselves are retried. |
+| 25 | Findings lifecycle: append-only `finding_reviews` table with strict role authorization (`private.caller_can_write`), state machine validation (`open` -> `acknowledged`, `resolved`, `dismissed`; `reopened` -> `open`), and enforced justification (>= 3 chars) on resolution and dismissal | Ensures complete accountability and auditability for every finding review decision. |
+| 26 | Preflight Reports & Evidence Manifests: Immutable snapshots tied to exact run IDs, content-hashed via canonical JSON SHA-256 (`manifest.sha256`), providing verification readiness (`BLOCKED`, `ACTION_REQUIRED`, `READY_FOR_VERIFICATION`) with prominent non-certification disclaimer | Provides auditors and verifiers with cryptographic proof of data integrity without overclaiming formal accreditation. |
+| 27 | Multi-model extraction architecture: Support for OpenRouter serving NVIDIA Nemotron 3 Ultra (`nvidia/nemotron-3-ultra-550b-a55b`) with structured JSON schema output and exponential backoff, alongside Google Gemini Flash | Provides resilient, cost-effective multimodal LLM extraction while ensuring deterministic validation rules remain strictly non-LLM. |
 ## Open decisions
 - First methodology and customer (BM EN01.001, AMS-I.D, ACM0002 are candidates only).
-- Hosting for the Python worker.
-- LLM provider and its data-retention terms.
+- Hosting and production deployment orchestration for the Python worker.
