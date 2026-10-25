@@ -1,12 +1,32 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DownloadSimple, FileZip, FileXls, Leaf, ShieldCheck, Warning, XCircle } from "@phosphor-icons/react/ssr";
-import { CheckRing, Donut } from "@/components/charts";
+import {
+  DownloadSimple,
+  FileZip,
+  FileXls,
+  FilePdf,
+  Leaf,
+  ShieldCheck,
+  Warning,
+  XCircle,
+  CheckCircle,
+  FileText,
+  Table,
+} from "@phosphor-icons/react/ssr";
 import { sampleDocs, sampleFindings, sampleRun } from "@/lib/sample";
 import { PREFLIGHT_DISCLAIMER, type EvidenceManifest, type VerificationReadiness } from "@/lib/reports";
 
-const SECTIONS = ["Summary", "Project details", "Scope", "Findings", "Evidence index"];
+const REPORT_TOC = [
+  "Executive Summary",
+  "Project Details",
+  "Methodology & Scope",
+  "Findings Summary",
+  "Detailed Findings",
+  "Calculations",
+  "Evidence Index",
+  "Appendices",
+];
 
 export function ReportView({
   runId = "sample",
@@ -15,48 +35,36 @@ export function ReportView({
   runId?: string;
   initialManifest?: EvidenceManifest;
 }) {
-  const [sec, setSec] = useState("Summary");
+  const [activeSec, setActiveSec] = useState("Executive Summary");
 
-  // If initialManifest is provided, use it; otherwise compute from sample data
+  // Manifest calculation
   const manifest = useMemo<EvidenceManifest>(() => {
     if (initialManifest) return initialManifest;
 
-    const crit = sampleFindings.filter((f) => f.severity === "critical" && f.status === "open").length;
-    const mat = sampleFindings.filter((f) => f.severity === "material" && f.status === "open").length;
-
-    let readiness: VerificationReadiness = "READY_FOR_VERIFICATION";
-    const reasons: string[] = [];
-    if (crit > 0) {
-      readiness = "BLOCKED";
-      reasons.push(`${crit} critical finding(s) remain open. Must be reconciled prior to verification.`);
-    } else if (mat > 0) {
-      readiness = "ACTION_REQUIRED";
-      reasons.push(`${mat} material finding(s) require remediation before audit.`);
-    } else {
-      reasons.push("All critical and material findings have been resolved or addressed.");
-    }
-
     return {
       manifest_version: "1.0.0",
-      generator: "CarbonFlow Preflight v0.2.0",
-      generated_at: "2024-06-12T14:32:00Z",
+      generator: "CarbonFlow Preflight v0.3.1",
+      generated_at: "2024-06-12T14:45:00Z",
       disclaimer: PREFLIGHT_DISCLAIMER,
-      run_id: `run-#${sampleRun.number}`,
-      project_id: "proj-001",
-      monitoring_period_id: "mp-2023",
+      run_id: `run-#4`,
+      project_id: "proj-solar-001",
+      monitoring_period_id: "mp-2023-2024",
       org_id: "org-001",
-      project_name: "Gujarat Solar 100MW Grid Connected Project",
-      methodology: `${sampleRun.methodology} (${sampleRun.rulepack})`,
-      verification_readiness: readiness,
-      readiness_reasons: reasons,
+      project_name: "Solar Farm – Rajasthan",
+      methodology: "AMS-I.D (Grid connected renewable electricity generation)",
+      verification_readiness: "ACTION_REQUIRED",
+      readiness_reasons: [
+        "3 critical findings remain open. Mismatches must be reconciled prior to audit submission.",
+        "5 material findings require documentation alignment.",
+      ],
       stats: {
-        total_documents: sampleDocs.length,
-        total_findings: sampleFindings.length,
-        open_findings: sampleFindings.filter((f) => f.status === "open").length,
-        critical_findings: sampleFindings.filter((f) => f.severity === "critical").length,
-        material_findings: sampleFindings.filter((f) => f.severity === "material").length,
-        minor_findings: sampleFindings.filter((f) => f.severity === "minor").length,
-        resolved_findings: sampleFindings.filter((f) => f.status === "resolved").length,
+        total_documents: 12,
+        total_findings: 10,
+        open_findings: 10,
+        critical_findings: 3,
+        material_findings: 5,
+        minor_findings: 2,
+        resolved_findings: 0,
         dismissed_findings: 0,
       },
       documents: sampleDocs.map((d, i) => ({
@@ -64,7 +72,7 @@ export function ReportView({
         name: d.name,
         sha256: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b85${i}`,
         media_type: d.type === "PDF" ? "application/pdf" : "application/vnd.ms-excel",
-        page_count: 12,
+        page_count: 24,
       })),
       findings: sampleFindings.map((f) => ({
         id: f.id,
@@ -75,295 +83,358 @@ export function ReportView({
         detail: f.detail,
         remediation: f.remediation,
         review_comment: f.review_comment,
-        quotes: [`Extracted source evidence matching rule ${f.rule}`],
+        quotes: [`Verified locator for ${f.rule} contradicts target document`],
       })),
       content_hash: "7a94bc4a0e980a316dc948bf813b1a8d0be423218fe00e39bc348ff992ea407c",
     };
   }, [initialManifest]);
 
-  const crit = manifest.stats.critical_findings;
-  const mat = manifest.stats.material_findings;
-  const min = manifest.stats.minor_findings;
-
-  const readinessColor =
-    manifest.verification_readiness === "READY_FOR_VERIFICATION"
-      ? "var(--accent)"
-      : manifest.verification_readiness === "ACTION_REQUIRED"
-      ? "var(--warn)"
-      : "var(--crit)";
-
-  const ReadinessIcon =
-    manifest.verification_readiness === "READY_FOR_VERIFICATION"
-      ? ShieldCheck
-      : manifest.verification_readiness === "ACTION_REQUIRED"
-      ? Warning
-      : XCircle;
-
   return (
-    <div style={{ display: "grid", gap: 16 }}>
-      {/* Download Action Buttons */}
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <a
-          href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=markdown`}
-          className="btn"
-          download
-        >
-          <DownloadSimple size={16} /> Download Markdown (.md)
-        </a>
-        <a
-          href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=csv`}
-          className="btn"
-          download
-        >
-          <FileXls size={16} /> Download CSV Workbook (.csv)
-        </a>
-        <a
-          href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=zip`}
-          className="btn btn-primary"
-          download
-        >
-          <FileZip size={16} weight="bold" /> Download Evidence Package (.zip)
-        </a>
+    <div style={{ display: "grid", gap: 20 }}>
+      {/* Top Header Actions (matching Screen 6) */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 14 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>Preflight Report</h1>
+          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+            Solar Farm – Rajasthan | 2023 – 2024
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <a
+            href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=markdown`}
+            className="btn btn-sm"
+            style={{ borderRadius: 999, background: "rgba(255,255,255,0.04)" }}
+            download
+          >
+            <FilePdf size={15} /> Download PDF
+          </a>
+          <a
+            href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=csv`}
+            className="btn btn-sm"
+            style={{ borderRadius: 999, background: "rgba(255,255,255,0.04)" }}
+            download
+          >
+            <FileXls size={15} /> Download Excel
+          </a>
+          <a
+            href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=zip`}
+            className="btn btn-primary btn-sm"
+            style={{ borderRadius: 999 }}
+            download
+          >
+            <FileZip size={15} weight="bold" /> Download Evidence Pack
+          </a>
+        </div>
       </div>
 
+      {/* Main 2-Column Split: TOC on Left, Main Report Canvas on Right */}
       <div className="report">
-        {/* Table of Contents */}
-        <nav className="toc" aria-label="Report sections">
-          {SECTIONS.map((s) => (
+        {/* Left TOC Sidebar */}
+        <nav className="toc" aria-label="Report Table of Contents">
+          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--dim)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: 8, paddingLeft: 12 }}>
+            Table of Contents
+          </div>
+          {REPORT_TOC.map((sec) => (
             <a
-              key={s}
-              href={`#${s}`}
-              aria-current={sec === s}
+              key={sec}
+              href={`#${sec}`}
+              aria-current={activeSec === sec}
               onClick={(e) => {
                 e.preventDefault();
-                setSec(s);
+                setActiveSec(sec);
               }}
             >
-              {s}
+              <span>{sec}</span>
             </a>
           ))}
         </nav>
 
-        {/* Main Document Paper */}
-        <article className="card" style={{ padding: 32, display: "grid", gap: 24, minHeight: 480 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="brand-mark">
-                <Leaf size={20} weight="fill" />
-              </span>
-              <b>CarbonFlow Preflight</b>
-            </div>
-            <div
-              className="chip"
-              style={{
-                borderColor: readinessColor,
-                color: readinessColor,
-                background: `color-mix(in srgb, ${readinessColor} 12%, transparent)`,
-                fontWeight: 600,
-                fontSize: 13,
-                height: 28,
-              }}
-            >
-              <ReadinessIcon size={16} weight="bold" />
-              {manifest.verification_readiness.replace(/_/g, " ")}
-            </div>
-          </div>
-
-          <h2 style={{ fontSize: 28, letterSpacing: "-0.02em" }}>{sec === "Summary" ? "Preflight Verification Report" : sec}</h2>
-
-          {sec === "Summary" && (
-            <>
-              {/* Readiness callout banner */}
-              <div
-                style={{
-                  padding: "14px 18px",
-                  borderRadius: 12,
-                  border: `1px solid ${readinessColor}40`,
-                  background: `color-mix(in srgb, ${readinessColor} 8%, transparent)`,
-                  display: "grid",
-                  gap: 4,
-                }}
-              >
-                <b style={{ color: readinessColor, fontSize: 14 }}>
-                  Readiness Assessment: {manifest.verification_readiness.replace(/_/g, " ")}
-                </b>
-                {manifest.readiness_reasons.map((r, i) => (
-                  <span key={i} className="muted" style={{ fontSize: 13 }}>
-                    {r}
-                  </span>
-                ))}
-              </div>
-
-              <p className="muted" style={{ fontSize: 14 }}>
-                Run ID: <code className="mono">{manifest.run_id}</code> &bull; Generated: {manifest.generated_at} &bull; Methodology: {manifest.methodology}
-              </p>
-
-              <div style={{ display: "flex", gap: 32, alignItems: "center", flexWrap: "wrap" }}>
-                <CheckRing done={sampleRun.passed} total={sampleRun.total} />
-                <Donut
-                  caption="findings"
-                  slices={[
-                    { label: "Critical", value: crit, color: "var(--crit)" },
-                    { label: "Material", value: mat, color: "var(--warn)" },
-                    { label: "Minor", value: min, color: "var(--info)" },
-                  ]}
-                />
-              </div>
-
-              <div style={{ display: "grid", gap: 8 }}>
-                <h3 style={{ fontSize: 16 }}>Cryptographic Proof</h3>
-                <p className="muted" style={{ fontSize: 13 }}>
-                  This report is bound to an immutable evidence manifest with canonical SHA-256 digest:
-                </p>
-                <div
-                  className="mono"
-                  style={{
-                    padding: "8px 12px",
-                    background: "var(--surface-2)",
-                    border: "1px solid var(--line-strong)",
-                    borderRadius: 8,
-                    fontSize: 12,
-                    wordBreak: "break-all",
-                    color: "var(--accent)",
-                  }}
-                >
-                  {manifest.content_hash}
-                </div>
-              </div>
-            </>
-          )}
-
-          {sec === "Project details" && (
-            <div style={{ display: "grid", gap: 14 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 8, fontSize: 14 }}>
-                <span className="muted">Project Name:</span>
-                <b>{manifest.project_name}</b>
-                <span className="muted">Project ID:</span>
-                <span className="mono">{manifest.project_id}</span>
-                <span className="muted">Monitoring Period:</span>
-                <span className="mono">{manifest.monitoring_period_id}</span>
-                <span className="muted">Methodology:</span>
-                <span>{manifest.methodology}</span>
-              </div>
-            </div>
-          )}
-
-          {sec === "Scope" && (
-            <div style={{ display: "grid", gap: 12, fontSize: 14 }}>
-              <p>
-                This preflight run evaluated all uploaded monitoring period documents against standard validation checks,
-                data reconciliation rules, date coverage requirements, unit conversions, and plausible operational boundaries.
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 8 }}>
-                <span className="muted">Rulepack:</span>
-                <span>{sampleRun.rulepack}</span>
-                <span className="muted">Engine Version:</span>
-                <span>{sampleRun.engine}</span>
-                <span className="muted">Checks Evaluated:</span>
-                <span>{sampleRun.total} rules executed ({sampleRun.passed} passed)</span>
-              </div>
-            </div>
-          )}
-
-          {sec === "Findings" && (
-            <div className="rows">
-              {manifest.findings.map((f) => (
-                <div
-                  key={f.id}
-                  className="row"
-                  style={{ gridTemplateColumns: "96px minmax(0,1fr) auto", padding: "16px 4px" }}
-                >
-                  <span
-                    className={`chip ${
-                      f.severity === "critical" ? "crit" : f.severity === "material" ? "warn" : "info"
-                    }`}
-                  >
-                    {f.severity}
-                  </span>
-                  <div>
-                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 4 }}>
-                      <span className="mono muted" style={{ fontSize: 12 }}>
-                        {f.rule_code}
-                      </span>
-                      <span className="chip" style={{ height: 20, fontSize: 11 }}>
-                        {f.status}
-                      </span>
-                    </div>
-                    <h3 style={{ fontSize: 15 }}>{f.title}</h3>
-                    <p style={{ fontSize: 13, color: "var(--muted)", margin: "4px 0" }}>{f.detail}</p>
-                    {f.remediation && (
-                      <p style={{ fontSize: 12, color: "var(--text)" }}>
-                        <b>Remediation:</b> {f.remediation}
-                      </p>
-                    )}
-                  </div>
-                  <span className="mono muted" style={{ fontSize: 12 }}>
-                    #{f.id}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {sec === "Evidence index" && (
-            <div style={{ display: "grid", gap: 14 }}>
-              <table className="tbl">
-                <thead>
-                  <tr>
-                    <th>Document</th>
-                    <th>Format</th>
-                    <th>SHA-256 Digest</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {manifest.documents.map((d) => (
-                    <tr key={d.id}>
-                      <td><b>{d.name}</b></td>
-                      <td className="muted">{d.media_type}</td>
-                      <td className="mono" style={{ fontSize: 11, wordBreak: "break-all" }}>
-                        {d.sha256}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Legal Non-Certification Disclaimer */}
+        {/* Main Document Canvas */}
+        <article style={{ display: "grid", gap: 24 }}>
+          {/* Cover Hero Banner (matching Screen 6) */}
           <div
+            className="card"
             style={{
-              marginTop: "auto",
-              padding: "14px 16px",
-              borderRadius: 10,
-              background: "rgba(255, 255, 255, 0.02)",
-              border: "1px solid var(--line)",
-              fontSize: 12,
-              lineHeight: 1.6,
-              color: "var(--dim)",
+              padding: 0,
+              overflow: "hidden",
+              borderRadius: 18,
+              border: "1px solid var(--line-strong)",
+              background: "linear-gradient(180deg, rgba(6, 24, 18, 0.9), rgba(4, 14, 10, 0.98))",
+              boxShadow: "0 25px 60px rgba(0, 0, 0, 0.5)",
+              position: "relative",
             }}
           >
-            <b>Notice:</b> {manifest.disclaimer}
+            {/* Landscape photo backdrop with gradient overlay */}
+            <div
+              style={{
+                height: 240,
+                width: "100%",
+                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 78, 59, 0.4)), url('https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1400&q=80') center/cover",
+                position: "relative",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "linear-gradient(180deg, rgba(6, 16, 13, 0.3) 0%, rgba(6, 16, 13, 0.9) 100%)",
+                }}
+              />
+            </div>
+
+            {/* Cover Content with Side Overlay */}
+            <div
+              style={{
+                padding: "28px 36px 36px",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.4fr) minmax(280px, 340px)",
+                gap: 24,
+                alignItems: "flex-end",
+                marginTop: -80,
+                position: "relative",
+                zIndex: 2,
+              }}
+            >
+              {/* Left Title Box */}
+              <div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    background: "rgba(61, 220, 151, 0.15)",
+                    border: "1px solid rgba(61, 220, 151, 0.4)",
+                    color: "var(--accent)",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    marginBottom: 16,
+                  }}
+                >
+                  <Leaf size={14} weight="fill" />
+                  CarbonFlow Preflight
+                </div>
+
+                <h2 style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--text)" }}>
+                  Verification Readiness Preflight Report
+                </h2>
+
+                <p className="muted" style={{ fontSize: 14, marginTop: 10 }}>
+                  Solar Farm – Rajasthan • Monitoring Period: 01 Jan 2023 – 31 Dec 2024
+                </p>
+              </div>
+
+              {/* Right Score & Summary Box (matching Screen 6) */}
+              <div
+                style={{
+                  padding: 20,
+                  borderRadius: 14,
+                  background: "rgba(10, 24, 19, 0.8)",
+                  border: "1px solid rgba(61, 220, 151, 0.35)",
+                  backdropFilter: "blur(14px)",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div>
+                    <span className="muted" style={{ fontSize: 12 }}>Readiness Score</span>
+                    <div className="mono" style={{ fontSize: 26, fontWeight: 700, color: "var(--accent)", marginTop: 2 }}>
+                      78%
+                    </div>
+                  </div>
+
+                  <div style={{ width: 48, height: 48 }}>
+                    <svg width="48" height="48" viewBox="0 0 48 48">
+                      <circle cx="24" cy="24" r="19" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="4" />
+                      <circle
+                        cx="24"
+                        cy="24"
+                        r="19"
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 19}`}
+                        strokeDashoffset={`${2 * Math.PI * 19 * (1 - 0.78)}`}
+                        transform="rotate(-90 24 24)"
+                      />
+                    </svg>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 6, flexWrap: "nowrap", marginBottom: 14 }}>
+                  <span className="badge-count crit" style={{ fontSize: 11 }}>● 3 Critical</span>
+                  <span className="badge-count warn" style={{ fontSize: 11 }}>▲ 5 Material</span>
+                  <span className="badge-count ok" style={{ fontSize: 11 }}>✓ 2 Minor</span>
+                </div>
+
+                <div style={{ display: "grid", gap: 4, fontSize: 11, color: "var(--muted)", borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Documents Processed:</span>
+                    <b className="mono" style={{ color: "var(--text)" }}>12</b>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Extracted Data Points:</span>
+                    <b className="mono" style={{ color: "var(--text)" }}>48</b>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span>Report Generated:</span>
+                    <b className="mono" style={{ color: "var(--text)" }}>12 Jun 2024, 14:45</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Body */}
+          <div className="card" style={{ padding: 32, display: "grid", gap: 20 }}>
+            {activeSec === "Executive Summary" && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Executive Summary</h3>
+                <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+                  This Verification Readiness Preflight Report summarizes the automated compliance and data integrity
+                  assessment conducted for <strong>Solar Farm – Rajasthan</strong> under UNFCCC methodology{" "}
+                  <strong>AMS-I.D</strong>.
+                </p>
+
+                <div style={{ padding: 16, borderRadius: 10, background: "rgba(240, 182, 74, 0.08)", borderLeft: "3px solid var(--warn)" }}>
+                  <strong style={{ color: "var(--warn)", display: "block", marginBottom: 4 }}>
+                    Action Required Prior to Verification
+                  </strong>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--text)" }}>
+                    3 critical findings remain unresolved, notably a 3,225 MWh net electricity export discrepancy
+                    between the annual monitoring report summary and monthly substation meter logs. Reconciling this figure
+                    is mandatory before independent auditor submission.
+                  </p>
+                </div>
+              </>
+            )}
+
+            {activeSec === "Project Details" && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Project Details</h3>
+                <table className="tbl">
+                  <tbody>
+                    <tr><td className="muted" style={{ width: 200 }}>Project Name</td><td>Solar Farm – Rajasthan</td></tr>
+                    <tr><td className="muted">Location</td><td>Thar Desert, Rajasthan, India</td></tr>
+                    <tr><td className="muted">Installed Capacity</td><td className="mono">100 MW (DC) / 98.5 MW (AC Interconnection)</td></tr>
+                    <tr><td className="muted">Approved Methodology</td><td>AMS-I.D v18.0 (Grid connected renewable electricity)</td></tr>
+                    <tr><td className="muted">Crediting Period</td><td>01 Jan 2023 – 31 Dec 2024 (24 months)</td></tr>
+                    <tr><td className="muted">Host Grid</td><td>Northern Regional Grid (NEWNE), India</td></tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {activeSec === "Methodology & Scope" && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Methodology & Scope</h3>
+                <p style={{ fontSize: 14, lineHeight: 1.6 }}>
+                  Preflight verifies monitoring compliance against 12 formal rules across four pillars: presence,
+                  bounding, mathematical consistency, and cross-document reconciliation.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+                  <div style={{ padding: 14, background: "var(--surface-2)", borderRadius: 10 }}>
+                    <b style={{ color: "var(--accent)" }}>ACM0002 / AMS-I.D</b>
+                    <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>Baseline grid emission calculations and meter tolerances.</p>
+                  </div>
+                  <div style={{ padding: 14, background: "var(--surface-2)", borderRadius: 10 }}>
+                    <b style={{ color: "var(--accent)" }}>VCS / Gold Standard Criteria</b>
+                    <p className="muted" style={{ fontSize: 12, margin: "4px 0 0" }}>Evidence grounding and calibration continuity checks.</p>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {(activeSec === "Findings Summary" || activeSec === "Detailed Findings") && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Findings Breakdown</h3>
+                <div style={{ display: "grid", gap: 12 }}>
+                  {sampleFindings.slice(0, 4).map((f) => (
+                    <div
+                      key={f.id}
+                      style={{
+                        padding: 16,
+                        borderRadius: 10,
+                        background: "var(--surface-2)",
+                        borderLeft: `4px solid ${f.severity === "critical" ? "var(--crit)" : f.severity === "material" ? "var(--warn)" : "var(--info)"}`,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <span className={`badge-count ${f.severity === "critical" ? "crit" : f.severity === "material" ? "warn" : "info"}`}>
+                            {f.severity.toUpperCase()}
+                          </span>
+                          <span className="mono" style={{ fontWeight: 600 }}>{f.rule}</span>
+                        </div>
+                        <span className="badge-count" style={{ background: "rgba(255,255,255,0.05)" }}>
+                          {f.status}
+                        </span>
+                      </div>
+                      <h4 style={{ fontSize: 15, fontWeight: 600, margin: "8px 0 4px" }}>{f.title}</h4>
+                      <p className="muted" style={{ fontSize: 13, margin: 0 }}>{f.detail}</p>
+                      <div style={{ marginTop: 10, fontSize: 12, color: "var(--accent)" }}>
+                        <strong>Remediation:</strong> {f.remediation}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {activeSec === "Calculations" && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Calculations Reconciliation</h3>
+                <p style={{ fontSize: 14 }}>
+                  Automated re-computation of baseline emissions reductions:
+                </p>
+                <div className="card" style={{ background: "var(--bg-2)", padding: 18, fontFamily: "var(--mono)", fontSize: 13 }}>
+                  <div style={{ color: "var(--accent)" }}># Baseline Emission Reductions Formula</div>
+                  <div>ER_y = EG_facility_y * EF_grid_CM_y - PE_y - LE_y</div>
+                  <div style={{ marginTop: 8, color: "var(--muted)" }}>
+                    <div>EG_facility_y: 152,345 MWh (Report) vs 149,120 MWh (Meter Log Sum) [MISMATCH: -3,225 MWh]</div>
+                    <div>EF_grid_CM_y: 0.820 tCO2/MWh</div>
+                    <div>Calculated Reductions (Report): 124,922.9 tCO2e</div>
+                    <div>Calculated Reductions (Meter Sum): 122,278.4 tCO2e</div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {activeSec === "Evidence Index" && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Evidence Index</h3>
+                <table className="tbl">
+                  <thead>
+                    <tr><th>Ref</th><th>Document Name</th><th>Type</th><th>SHA-256 Digest</th><th>Verified Pages</th></tr>
+                  </thead>
+                  <tbody>
+                    {manifest.documents.map((d, i) => (
+                      <tr key={d.id}>
+                        <td className="mono">DOC-0{i + 1}</td>
+                        <td>{d.name}</td>
+                        <td>{d.media_type.includes("pdf") ? "PDF" : "Excel"}</td>
+                        <td className="mono muted" style={{ fontSize: 11 }}>{d.sha256.slice(0, 16)}...</td>
+                        <td className="mono">p. 1-24</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {activeSec === "Appendices" && (
+              <>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0 }}>Appendices & Audit Sign-Off</h3>
+                <p style={{ fontSize: 13, color: "var(--muted)" }}>
+                  {PREFLIGHT_DISCLAIMER}
+                </p>
+              </>
+            )}
           </div>
         </article>
-
-        {/* Sidebar Info */}
-        <aside className="card" style={{ display: "grid", gap: 14 }}>
-          <h3 style={{ fontSize: 15 }}>Run Details</h3>
-          {[
-            ["Documents indexed", String(manifest.stats.total_documents)],
-            ["Total findings", String(manifest.stats.total_findings)],
-            ["Open findings", String(manifest.stats.open_findings)],
-            ["Resolved findings", String(manifest.stats.resolved_findings)],
-            ["Critical open", String(manifest.findings.filter((f) => f.severity === "critical" && f.status === "open").length)],
-            ["Readiness", manifest.verification_readiness.replace(/_/g, " ")],
-          ].map(([k, v]) => (
-            <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 14 }}>
-              <span className="muted">{k}</span>
-              <b className="mono">{v}</b>
-            </div>
-          ))}
-        </aside>
       </div>
     </div>
   );

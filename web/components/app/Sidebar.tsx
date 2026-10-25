@@ -32,18 +32,35 @@ export function Sidebar({ orgName, email, guest }: { orgName: string; email: str
           </Link>
         ))}
       </nav>
-      <div className="side-foot">
-        <span className="avatar">{email.slice(0, 1).toUpperCase()}</span>
+      <div className="side-foot" style={{ background: "rgba(255, 255, 255, 0.02)", border: "1px solid var(--line)" }}>
+        <span
+          className="avatar"
+          style={{
+            background: "linear-gradient(135deg, #10b981, #047857)",
+            color: "#ffffff",
+            border: "1px solid rgba(61, 220, 151, 0.4)",
+            fontWeight: 700,
+          }}
+        >
+          {orgName && orgName !== "No organization" && orgName !== "Guest mode"
+            ? orgName.slice(0, 1).toUpperCase()
+            : "G"}
+        </span>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{orgName}</div>
-          {guest ? (
-            <span className="hint">Sign-in is off</span>
-          ) : (
-            <form action={signOutAction}>
-              <button className="hint" style={{ background: "none", border: 0, padding: 0, cursor: "pointer" }}>Sign out</button>
-            </form>
-          )}
+          <div style={{ fontSize: 13, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {orgName && orgName !== "No organization" && orgName !== "Guest mode" ? orgName : "GreenEarth Energy"}
+          </div>
+          <div className="hint" style={{ fontSize: 11, color: "var(--dim)" }}>
+            {guest ? "Team Workspace" : "Team Workspace"}
+          </div>
         </div>
+        {!guest && (
+          <form action={signOutAction}>
+            <button className="hint" style={{ background: "none", border: 0, padding: 0, cursor: "pointer", color: "var(--dim)" }} title="Sign out">
+              Log out
+            </button>
+          </form>
+        )}
       </div>
     </aside>
   );

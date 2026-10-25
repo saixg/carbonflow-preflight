@@ -31,9 +31,10 @@ export function Nav() {
       <div className="wrap">
         <Brand />
         <nav aria-label="Primary">
-          <a href="#how">How it works</a>
           <a href="#product">Product</a>
-          <a href="#boundaries">Boundaries</a>
+          <a href="#how">How it works</a>
+          <a href="#use-cases">Use cases</a>
+          <a href="#pricing">Pricing</a>
         </nav>
         <div className="acts">
           <Link href="/login" className="muted">Sign in</Link>
@@ -47,49 +48,162 @@ export function Nav() {
 function ScanCard() {
   const reduce = useReducedMotion();
   const rows = [
-    { c: "var(--crit)", n: 3, l: "Critical" },
-    { c: "var(--warn)", n: 5, l: "Material" },
-    { c: "var(--info)", n: 2, l: "Minor" },
+    { c: "#ff6b6b", bg: "rgba(255, 107, 107, 0.15)", n: 3, l: "Critical" },
+    { c: "#f0b64a", bg: "rgba(240, 182, 74, 0.15)", n: 6, l: "Need Attention" },
+    { c: "#5aa9ff", bg: "rgba(90, 169, 255, 0.15)", n: 3, l: "Minor" },
   ];
   return (
     <motion.aside
-      className="scan"
+      className="scan holo-tablet"
       aria-label="Sample preflight scan"
-      initial={reduce ? false : { opacity: 0, y: 30, rotate: 0 }}
-      animate={{ opacity: 1, y: 0, rotate: -3 }}
-      transition={{ delay: 0.5, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+      style={{
+        border: "1px solid rgba(61, 220, 151, 0.45)",
+        boxShadow: "0 25px 60px rgba(0, 0, 0, 0.65), 0 0 35px rgba(61, 220, 151, 0.2)",
+        borderRadius: "20px",
+      }}
+      initial={reduce ? false : { opacity: 0, y: 35, rotate: 0 }}
+      animate={{ opacity: 1, y: 0, rotate: -2 }}
+      transition={{ delay: 0.4, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
     >
-      <h4><CheckCircle size={20} weight="fill" color="var(--accent)" /> Preflight scan complete</h4>
-      <ul>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+        <CheckCircle size={22} weight="fill" color="var(--accent)" />
+        <h4 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Preflight Scan Complete</h4>
+      </div>
+
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span>Total Findings</span>
+        <span className="mono" style={{ color: "var(--text)", fontWeight: 700, fontSize: 15 }}>12 Findings</span>
+      </div>
+
+      <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "grid", gap: 8, fontSize: 13 }}>
         {rows.map((r) => (
-          <li key={r.l}>
-            <span className="dot" style={{ background: r.c }} />
-            <b className="mono">{r.n}</b> {r.l}
+          <li key={r.l} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: 8, background: "rgba(255, 255, 255, 0.03)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className="dot" style={{ background: r.c }} />
+              <span style={{ color: "var(--text)" }}>{r.l}</span>
+            </div>
+            <span className="mono badge-count" style={{ background: r.bg, color: r.c, border: `1px solid ${r.c}44` }}>
+              {r.n}
+            </span>
           </li>
         ))}
       </ul>
-      <p className="hint" style={{ marginTop: 12 }}>Sample data</p>
+
+      <div style={{ marginTop: 16 }}>
+        <Link
+          href="/sample"
+          className="btn btn-sm"
+          style={{
+            width: "100%",
+            borderRadius: 999,
+            borderColor: "rgba(61, 220, 151, 0.4)",
+            background: "rgba(61, 220, 151, 0.08)",
+            color: "var(--accent)",
+            fontWeight: 600,
+          }}
+        >
+          View Report <ArrowRight size={13} weight="bold" />
+        </Link>
+      </div>
     </motion.aside>
   );
 }
 
 export function Hero() {
   return (
-    <section className="wrap hero" aria-labelledby="hero-h">
+    <section className="wrap hero" aria-labelledby="hero-h" style={{ position: "relative" }}>
       <div>
         <Reveal y={16}>
-          <h1 id="hero-h">Catch issues <em>before</em> they cost you time and credits.</h1>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 16px",
+              borderRadius: 999,
+              background: "rgba(61, 220, 151, 0.08)",
+              border: "1px solid rgba(61, 220, 151, 0.28)",
+              color: "#3ddc97",
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              marginBottom: 20,
+            }}
+          >
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3ddc97", boxShadow: "0 0 8px #3ddc97" }} />
+            AI-ASSISTED · EVIDENCE-BACKED · VERIFICATION READY
+          </div>
         </Reveal>
-        <Reveal delay={0.1} y={16}>
-          <p className="lead">Preflight checks your monitoring data, calculations and evidence against methodology rules, with a source for every finding.</p>
+
+        <Reveal delay={0.08} y={16}>
+          <h1 id="hero-h" style={{ maxWidth: "16ch" }}>
+            Catch issues <em style={{ color: "var(--accent)", textShadow: "0 0 24px rgba(61,220,151,0.35)" }}>before</em> they cost you time, money and <em style={{ color: "var(--accent)", textShadow: "0 0 24px rgba(61,220,151,0.35)" }}>credits.</em>
+          </h1>
         </Reveal>
-        <Reveal delay={0.2} y={16}>
-          <div className="cta">
-            <Link href={START} className="btn btn-primary btn-lg">Get started <ArrowRight size={16} weight="bold" /></Link>
-            <Link href="/sample" className="btn btn-lg">View sample report</Link>
+
+        <Reveal delay={0.16} y={16}>
+          <p className="lead" style={{ fontSize: 16, lineHeight: 1.6, maxWidth: "52ch" }}>
+            CarbonFlow Preflight helps you prepare your carbon project documents, data and calculations for independent verification — faster, cleaner and with full traceability.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.24} y={16}>
+          <div className="cta" style={{ display: "flex", gap: 14, alignItems: "center" }}>
+            <Link href={START} className="btn btn-primary btn-lg" style={{ borderRadius: 999, padding: "0 28px", fontWeight: 600 }}>
+              Get started <ArrowRight size={16} weight="bold" />
+            </Link>
+            <Link
+              href="/sample"
+              className="btn btn-lg"
+              style={{
+                borderRadius: 999,
+                padding: "0 24px",
+                background: "rgba(255, 255, 255, 0.04)",
+                borderColor: "rgba(255, 255, 255, 0.15)",
+                display: "inline-flex",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <span style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255, 255, 255, 0.1)", display: "grid", placeItems: "center" }}>
+                ▶
+              </span>
+              Watch demo
+            </Link>
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.32} y={16}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gap: 16,
+              marginTop: 48,
+              paddingTop: 32,
+              borderTop: "1px solid var(--line)",
+            }}
+          >
+            <div>
+              <strong style={{ fontSize: 32, fontWeight: 700, color: "var(--text)", display: "block" }}>60%</strong>
+              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.4 }}>Faster verification preparation</span>
+            </div>
+            <div>
+              <strong style={{ fontSize: 32, fontWeight: 700, color: "var(--text)", display: "block" }}>40%</strong>
+              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.4 }}>Lower consultant effort</span>
+            </div>
+            <div>
+              <strong style={{ fontSize: 32, fontWeight: 700, color: "var(--text)", display: "block" }}>90%</strong>
+              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.4 }}>Issues caught early</span>
+            </div>
+            <div>
+              <strong style={{ fontSize: 32, fontWeight: 700, color: "var(--text)", display: "block" }}>100%</strong>
+              <span style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.4 }}>Evidence traceability</span>
+            </div>
           </div>
         </Reveal>
       </div>
+
       <div className="stage">
         <Scene kind="hero" />
         <ScanCard />

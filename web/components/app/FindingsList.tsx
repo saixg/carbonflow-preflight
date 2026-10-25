@@ -167,7 +167,7 @@ export function FindingsList({
       <div className="card" style={{ padding: 16 }}>
         {/* Filters and search */}
         <div className="filters" style={{ marginBottom: 12, alignItems: "center" }}>
-          <div style={{ position: "relative", flex: "1 1 240px" }}>
+          <div style={{ position: "relative", flex: "1 1 200px" }}>
             <MagnifyingGlass size={16} style={{ position: "absolute", left: 12, top: 13, color: "var(--dim)" }} />
             <label htmlFor="fq" className="sr-only">
               Search findings
@@ -176,11 +176,27 @@ export function FindingsList({
               id="fq"
               className="input"
               style={{ paddingLeft: 36 }}
-              placeholder="Search by title, rule or detail"
+              placeholder="Search findings..."
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
+
+          <label className="sr-only" htmlFor="fsev">
+            Severity
+          </label>
+          <select
+            id="fsev"
+            className="select"
+            style={{ width: 150 }}
+            value={sev}
+            onChange={(e) => setSev(e.target.value as Severity | "all")}
+          >
+            <option value="all">All Severity</option>
+            <option value="critical">Critical ({counts.critical})</option>
+            <option value="material">Material ({counts.material})</option>
+            <option value="minor">Minor ({counts.minor})</option>
+          </select>
 
           <label className="sr-only" htmlFor="fs">
             Status
@@ -188,15 +204,26 @@ export function FindingsList({
           <select
             id="fs"
             className="select"
-            style={{ width: 180 }}
+            style={{ width: 140 }}
             value={status}
             onChange={(e) => setStatus(e.target.value as FindingStatus | "dismissed" | "all")}
           >
-            <option value="all">All statuses ({statusCounts.all})</option>
+            <option value="all">All Status</option>
             <option value="open">Open ({statusCounts.open})</option>
             <option value="acknowledged">Acknowledged ({statusCounts.acknowledged})</option>
             <option value="resolved">Resolved ({statusCounts.resolved})</option>
             <option value="dismissed">Dismissed ({statusCounts.dismissed})</option>
+          </select>
+
+          <select
+            id="sort"
+            className="select"
+            style={{ width: 150 }}
+            defaultValue="severity"
+          >
+            <option value="severity">Sort by: Severity</option>
+            <option value="rule">Sort by: Rule</option>
+            <option value="status">Sort by: Status</option>
           </select>
         </div>
 

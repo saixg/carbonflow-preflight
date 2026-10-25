@@ -55,9 +55,18 @@ export default async function DocumentsPage() {
     <div className="page">
       <div className="page-h">
         <div>
-          <h1>Documents and Evidence</h1>
-          <p className="muted">
-            Inspect source documents and trace each extracted value directly to its verified bounding box locator.
+          <div className="crumbs" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--dim)", marginBottom: 8 }}>
+            <Link href="/projects" style={{ color: "var(--muted)" }}>Projects</Link>
+            <span>›</span>
+            <Link href="/projects" style={{ color: "var(--muted)" }}>Solar Farm – Rajasthan</Link>
+            <span>›</span>
+            <Link href="/documents" style={{ color: "var(--muted)" }}>Documents</Link>
+            <span>›</span>
+            <span style={{ color: "var(--text)" }}>Monitoring_Report_2023.pdf</span>
+          </div>
+          <h1>Monitoring_Report_2023.pdf</h1>
+          <p className="muted" style={{ fontSize: 14, marginTop: 4 }}>
+            Grounding verification inspection: trace extracted parameters to exact page passages and bounding boxes.
           </p>
         </div>
       </div>

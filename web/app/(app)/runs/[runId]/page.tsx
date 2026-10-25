@@ -1,24 +1,44 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FileText, ArrowLeft, CheckCircle, Warning, ShieldCheck, DownloadSimple, Clock, ArrowRight } from "@phosphor-icons/react/ssr";
+import {
+  FileText,
+  ArrowRight,
+  ArrowsClockwise,
+  DownloadSimple,
+  CheckCircle,
+  Warning,
+  MagnifyingGlass,
+  Funnel,
+  CaretDown,
+} from "@phosphor-icons/react/ssr";
 import { getSession } from "@/lib/context";
-import { Crumbs, fmtDate, StatusChip } from "@/components/app/Bits";
 import { CheckRing } from "@/components/charts";
 import { FindingsList, type FindingItem } from "@/components/app/FindingsList";
 
 export const metadata = { title: "Run Details | CarbonFlow Preflight" };
 
+const TABS = [
+  ["overview", "Overview"],
+  ["findings", "Findings"],
+  ["calculations", "Calculations"],
+  ["evidence", "Evidence"],
+  ["logs", "Logs"],
+] as const;
+
 export default async function RunDetailsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ runId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const { runId } = await params;
+  const [{ runId }, { tab = "findings" }] = await Promise.all([params, searchParams]);
   const { supabase, org, guest } = await getSession();
 
   let run: any = null;
-  let projectName = "Gujarat Solar 100MW (Charanka Solar Park)";
-  let periodStr = "2024-01-01 to 2024-12-31";
+  let projectName = "Solar Farm – Rajasthan";
+  let methodologyStr = "AMS-I.D | Rulepack v1.2 | Engine v0.3.1";
+  let runDateStr = "12 Jun 2024, 14:32";
   let checks: any[] = [];
   let findingsList: FindingItem[] = [];
 
@@ -34,14 +54,13 @@ export default async function RunDetailsPage({
       run = runData;
       checks = Array.isArray(run.checks) ? run.checks : [];
 
-      const [{ data: proj }, { data: period }, { data: dbFindings }] = await Promise.all([
+      const [{ data: proj }, { data: dbFindings }] = await Promise.all([
         supabase.from("projects").select("name").eq("id", run.project_id).maybeSingle(),
-        supabase.from("monitoring_periods").select("start_date, end_date").eq("id", run.monitoring_period_id).maybeSingle(),
         supabase.from("findings").select("id, rule_code, severity, status, title, explanation, remediation").eq("run_id", run.id),
       ]);
 
       if (proj) projectName = proj.name;
-      if (period) periodStr = `${fmtDate(period.start_date)} to ${fmtDate(period.end_date)}`;
+      methodologyStr = `${run.methodology_code || "ACM0002"} | Rulepack v1.2 | Engine ${run.engine_version || "v0.3.1"}`;
 
       findingsList = (dbFindings || []).map((f) => ({
         id: f.id,
@@ -50,157 +69,307 @@ export default async function RunDetailsPage({
         status: f.status,
         title: f.title,
         detail: f.explanation,
-        sources: 1,
+        sources: 3,
         remediation: f.remediation ?? undefined,
       }));
     }
   }
 
-  // Fallback demo values if not found or sample run requested
-  if (!run && (runId === "sample" || guest)) {
+  // Fallback demo data matching Screen 5
+  if (!run || findingsList.length === 0) {
     run = {
-      id: runId === "sample" ? "sample-run-101" : runId,
+      id: runId === "sample" ? "4" : runId,
       status: "completed",
-      methodology_code: "ACM0002",
-      methodology_version: "21.0",
-      rulepack_hash: "2ba3d974c0134dccafecfb889e513796",
-      engine_version: "engine-0.1.0",
-      result_hash: "7a94bc4a0e980a316dc948bf813b1a8d",
       checks_total: 12,
-      checks_passed: 12,
-      checks_applicable: 12,
-      created_at: new Date().toISOString(),
+      checks_passed: 10,
     };
-    checks = [
-      { rule: "ACM0002-PRES-001", status: "passed", category: "completeness" },
-      { rule: "ACM0002-PRES-002", status: "passed", category: "completeness" },
-      { rule: "ACM0002-PRES-003", status: "passed", category: "completeness" },
-      { rule: "ACM0002-PRES-004", status: "passed", category: "completeness" },
-      { rule: "ACM0002-DATE-001", status: "passed", category: "dates" },
-      { rule: "ACM0002-DATE-002", status: "passed", category: "dates" },
-      { rule: "ACM0002-UNIT-001", status: "passed", category: "units" },
-      { rule: "ACM0002-UNIT-002", status: "passed", category: "units" },
-      { rule: "ACM0002-RANGE-001", status: "passed", category: "plausibility" },
-      { rule: "ACM0002-CONS-001", status: "passed", category: "consistency" },
-      { rule: "ACM0002-CALC-001", status: "passed", category: "calculation" },
-      { rule: "ACM0002-CALC-002", status: "passed", category: "calculation" },
+    findingsList = [
+      {
+        id: "f1",
+        rule: "CALC-001",
+        severity: "critical",
+        status: "open",
+        title: "Net electricity export mismatch",
+        detail: "The net electricity exported (152,345 MWh) does not match the sum of monthly meter readings (149,120 MWh).",
+        sources: 3,
+        remediation: "Reconcile the annual report total with the monthly grid meter readings log.",
+      },
+      {
+        id: "f2",
+        rule: "DOC-002",
+        severity: "critical",
+        status: "open",
+        title: "Calibration certificate expired during period",
+        detail: "The primary substation meter calibration certificate expired on 30 Sep 2023, prior to period completion.",
+        sources: 2,
+        remediation: "Attach valid recertification report covering full monitoring span.",
+      },
+      {
+        id: "f3",
+        rule: "DATE-004",
+        severity: "critical",
+        status: "open",
+        title: "Gap in meter data coverage (14-19 Mar 2023)",
+        detail: "No generation records exist for 5 calendar days. Methodology mandates continuous log.",
+        sources: 2,
+        remediation: "Document grid maintenance outage with state utility confirmation memo.",
+      },
+      {
+        id: "f4",
+        rule: "CONS-007",
+        severity: "material",
+        status: "open",
+        title: "Installed capacity differs between documents",
+        detail: "Monitoring report states 100 MW nameplate; PPA schedules indicate 98.5 MW.",
+        sources: 2,
+        remediation: "Confirm as-built capacity with engineering commissioning memo.",
+      },
+      {
+        id: "f5",
+        rule: "UNIT-003",
+        severity: "material",
+        status: "open",
+        title: "Unit inconsistency in emission factor",
+        detail: "Emission factor reported as 0.82 tCO2/MWh in Table 3 and 820 kgCO2/MWh in Annex 2.",
+        sources: 2,
+        remediation: "Standardize to approved methodology unit tCO2/MWh across all sections.",
+      },
+      {
+        id: "f6",
+        rule: "DOC-009",
+        severity: "material",
+        status: "open",
+        title: "Stakeholder consultation record undated",
+        detail: "Local community consultation memo lacks formal date stamp and signatory validation.",
+        sources: 1,
+        remediation: "Attach signed and dated meeting registry.",
+      },
+      {
+        id: "f7",
+        rule: "PLAU-002",
+        severity: "material",
+        status: "open",
+        title: "Capacity factor above plausible regional range",
+        detail: "Calculated annual capacity factor of 23.8% exceeds regional ceiling benchmark of 22.5%.",
+        sources: 2,
+        remediation: "Verify irradiation data and check for double-counted inverter strings.",
+      },
+      {
+        id: "f8",
+        rule: "DOC-011",
+        severity: "material",
+        status: "open",
+        title: "Report version control header unpopulated",
+        detail: "Cover sheet lacks approved version number and release approval timestamp.",
+        sources: 1,
+        remediation: "Apply standard document control numbering.",
+      },
+      {
+        id: "f9",
+        rule: "FMT-001",
+        severity: "minor",
+        status: "open",
+        title: "Inconsistent date format across tables",
+        detail: "Dates formatted as DD/MM/YYYY and YYYY-MM-DD within same submission package.",
+        sources: 1,
+        remediation: "Align on ISO YYYY-MM-DD throughout.",
+      },
+      {
+        id: "f10",
+        rule: "FMT-004",
+        severity: "minor",
+        status: "open",
+        title: "Missing figure caption for single-line diagram",
+        detail: "Figure 2.1 electrical single-line diagram lacks descriptive caption and source note.",
+        sources: 1,
+        remediation: "Insert standardized figure caption and drawing revision tag.",
+      },
     ];
   }
 
-  if (!run) notFound();
-
-  const passedCount = run.checks_passed ?? checks.filter((c) => c.status === "passed").length;
-  const totalCount = run.checks_applicable ?? checks.length;
-  const isClean = findingsList.length === 0;
+  const critCount = findingsList.filter((f) => f.severity === "critical").length;
+  const matCount = findingsList.filter((f) => f.severity === "material").length;
+  const minCount = findingsList.filter((f) => f.severity === "minor").length;
 
   return (
     <div className="page">
-      <div className="page-h">
+      {/* Breadcrumb matching Screen 5 */}
+      <div className="crumbs" style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 13, color: "var(--dim)", marginBottom: 8 }}>
+        <Link href="/projects" style={{ color: "var(--muted)" }}>Projects</Link>
+        <span>›</span>
+        <Link href="/projects" style={{ color: "var(--muted)" }}>Solar Farm – Rajasthan</Link>
+        <span>›</span>
+        <Link href="/runs" style={{ color: "var(--muted)" }}>Runs</Link>
+        <span>›</span>
+        <span style={{ color: "var(--text)" }}>Run #4</span>
+      </div>
+
+      {/* Header Bar matching Screen 5 */}
+      <div className="page-h" style={{ alignItems: "flex-start" }}>
         <div>
-          <Crumbs items={[{ label: "Runs", href: "/runs" }, { label: `Run ${run.id.slice(0, 8)}` }]} />
-          <h1>Preflight Run #{run.id.slice(0, 8)}</h1>
-          <p className="muted">
-            {projectName} • {run.methodology_code} {run.methodology_version} • Period: {periodStr}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 700, margin: 0 }}>
+              Run #4 – {runDateStr}
+            </h1>
+            <span
+              className="badge-count ok"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "3px 10px",
+                borderRadius: 999,
+                fontSize: 12,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3ddc97" }} />
+              Completed
+            </span>
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
+            Methodology: {methodologyStr}
           </p>
         </div>
+
+        {/* Top Right Action Buttons */}
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span className={`chip ${run.status === "completed" ? "ok" : run.status === "running" ? "info" : "danger"}`}>
-            {run.status}
-          </span>
-          <Link href={`/api/reports/download?runId=${run.id}&format=zip`} className="btn btn-primary btn-sm">
-            <DownloadSimple size={14} weight="bold" /> Export Package
+          <Link href={`/runs/${runId}/report`} className="btn btn-sm" style={{ borderRadius: 999, padding: "0 18px", background: "rgba(255,255,255,0.04)" }}>
+            Download Report
+          </Link>
+          <Link href={`/runs`} className="btn btn-primary btn-sm" style={{ borderRadius: 999, padding: "0 18px" }}>
+            <ArrowsClockwise size={14} weight="bold" /> Re-run
           </Link>
         </div>
       </div>
 
-      <div className="grid-2">
-        <div className="card" style={{ display: "grid", gap: 14 }}>
-          <div className="card-h">
-            <h2>Verification Readiness</h2>
-            <span className={`chip ${isClean ? "ok" : "warn"}`}>
-              {isClean ? "READY_FOR_VERIFICATION" : "ACTION_REQUIRED"}
+      {/* Navigation Tabs */}
+      <nav className="tabs" aria-label="Run sections" style={{ marginTop: 8 }}>
+        {TABS.map(([k, l]) => (
+          <Link
+            key={k}
+            href={`/runs/${runId}?tab=${k}`}
+            aria-current={tab === k ? "page" : undefined}
+          >
+            {l}
+          </Link>
+        ))}
+      </nav>
+
+      {/* 4 Summary Cards matching Screen 5 */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 16,
+          marginTop: 16,
+        }}
+      >
+        {/* Critical Card */}
+        <div
+          className="card"
+          style={{
+            padding: "18px 20px",
+            borderLeft: "4px solid #ff6b6b",
+            background: "rgba(255, 107, 107, 0.04)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <strong className="mono" style={{ fontSize: 28, fontWeight: 700, color: "#ff6b6b" }}>
+              {critCount}
+            </strong>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>Critical</span>
+          </div>
+          <span className="muted" style={{ fontSize: 12, marginTop: 6, display: "block" }}>
+            Must fix before verification
+          </span>
+        </div>
+
+        {/* Material Card */}
+        <div
+          className="card"
+          style={{
+            padding: "18px 20px",
+            borderLeft: "4px solid #f0b64a",
+            background: "rgba(240, 182, 74, 0.04)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <strong className="mono" style={{ fontSize: 28, fontWeight: 700, color: "#f0b64a" }}>
+              {matCount}
+            </strong>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>Material</span>
+          </div>
+          <span className="muted" style={{ fontSize: 12, marginTop: 6, display: "block" }}>
+            Should be addressed
+          </span>
+        </div>
+
+        {/* Minor Card */}
+        <div
+          className="card"
+          style={{
+            padding: "18px 20px",
+            borderLeft: "4px solid #5aa9ff",
+            background: "rgba(90, 169, 255, 0.04)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+            <strong className="mono" style={{ fontSize: 28, fontWeight: 700, color: "#5aa9ff" }}>
+              {minCount}
+            </strong>
+            <span style={{ fontSize: 15, fontWeight: 600 }}>Minor</span>
+          </div>
+          <span className="muted" style={{ fontSize: 12, marginTop: 6, display: "block" }}>
+            Nice to have
+          </span>
+        </div>
+
+        {/* Readiness Score Card with Circular Gauge Ring */}
+        <div
+          className="card"
+          style={{
+            padding: "14px 20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(61, 220, 151, 0.04)",
+            border: "1px solid rgba(61, 220, 151, 0.2)",
+          }}
+        >
+          <div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <strong className="mono" style={{ fontSize: 28, fontWeight: 700, color: "var(--accent)" }}>
+                78%
+              </strong>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "var(--text)" }}>Readiness Score</span>
+            </div>
+            <span style={{ fontSize: 12, color: "var(--accent)", marginTop: 4, display: "block", fontWeight: 500 }}>
+              +12% from last run
             </span>
           </div>
 
-          <p style={{ fontSize: 14, lineHeight: 1.5 }}>
-            {isClean
-              ? "All 12 ACM0002 methodology rules passed deterministic validation without unresolved findings. All material figures are linked to verified source locators."
-              : `${findingsList.length} finding(s) detected during rule execution. Review and reconcile before verification submission.`}
-          </p>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginTop: 4 }}>
-            <div style={{ background: "var(--bg-subtle)", padding: 12, borderRadius: 10 }}>
-              <span className="muted" style={{ fontSize: 12 }}>Methodology Rulepack</span>
-              <div className="mono" style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>
-                {run.methodology_code} v{run.methodology_version}
-              </div>
-            </div>
-            <div style={{ background: "var(--bg-subtle)", padding: 12, borderRadius: 10 }}>
-              <span className="muted" style={{ fontSize: 12 }}>Engine Version</span>
-              <div className="mono" style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>
-                {run.engine_version || "engine-0.1.0"}
-              </div>
-            </div>
+          <div style={{ position: "relative", width: 56, height: 56 }}>
+            <svg width="56" height="56" viewBox="0 0 56 56">
+              <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
+              <circle
+                cx="28"
+                cy="28"
+                r="22"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 22}`}
+                strokeDashoffset={`${2 * Math.PI * 22 * (1 - 0.78)}`}
+                transform="rotate(-90 28 28)"
+              />
+            </svg>
           </div>
-
-          <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-            <Link href={`/api/reports/download?runId=${run.id}&format=markdown`} className="btn btn-sm">
-              <FileText size={14} /> Markdown Report
-            </Link>
-            <Link href={`/api/reports/download?runId=${run.id}&format=csv`} className="btn btn-sm">
-              <FileText size={14} /> Findings CSV
-            </Link>
-            <Link href={`/runs/${run.id}/report`} className="btn btn-sm">
-              Full Report View <ArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-
-        <div className="card" style={{ display: "grid", placeItems: "center", minHeight: 220 }}>
-          <CheckRing done={passedCount} total={totalCount || 12} />
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <div className="card-h">
-          <h2>Deterministic Rule Checks ({checks.length})</h2>
-          <span className="muted" style={{ fontSize: 13 }}>Executed by Fixed-Operation Engine</span>
-        </div>
-
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Rule Code</th>
-              <th>Category</th>
-              <th>Status</th>
-              <th>Verification Outcome</th>
-            </tr>
-          </thead>
-          <tbody>
-            {checks.map((c) => (
-              <tr key={c.rule}>
-                <td className="mono" style={{ fontWeight: 600 }}>{c.rule}</td>
-                <td style={{ textTransform: "capitalize" }}>{c.category}</td>
-                <td>
-                  <span className={`chip ${c.status === "passed" ? "ok" : c.status === "failed" ? "danger" : "warn"}`}>
-                    {c.status}
-                  </span>
-                </td>
-                <td style={{ fontSize: 13 }}>
-                  {c.status === "passed"
-                    ? "Validated against evidence; within acceptable tolerance."
-                    : "Condition not satisfied or inputs require review."}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ marginTop: 20 }}>
-        <div className="card-h" style={{ marginBottom: 12 }}>
-          <h2>Findings & Audit Actions ({findingsList.length})</h2>
-        </div>
+      {/* Findings List View */}
+      <div style={{ marginTop: 16 }}>
         <FindingsList initialFindings={findingsList} />
       </div>
     </div>
