@@ -58,31 +58,35 @@ export default async function Runs() {
   const { supabase, org } = await getSession();
 
   let dbRuns: any[] = [];
-  if (org) {
-    const { data: runs } = await supabase
-      .from("runs")
-      .select("id, status, created_at, methodology_code, checks_passed, checks_applicable, project_id")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false })
-      .limit(10);
+  if (org && supabase?.from) {
+    try {
+      const { data: runs } = await supabase
+        .from("runs")
+        .select("id, status, created_at, methodology_code, checks_passed, checks_applicable, project_id")
+        .eq("org_id", org.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
 
-    if (runs && runs.length > 0) {
-      dbRuns = await Promise.all(
-        runs.map(async (r, i) => {
-          const { data: proj } = await supabase.from("projects").select("name").eq("id", r.project_id).maybeSingle();
-          return {
-            id: r.id,
-            number: `Run #${runs.length - i}`,
-            date: fmtDate(r.created_at.slice(0, 10)),
-            projectName: proj?.name || "Gujarat Solar 100MW",
-            methodology: r.methodology_code || "ACM0002",
-            passed: r.checks_passed || 10,
-            total: r.checks_applicable || 12,
-            readiness: Math.round(((r.checks_passed || 10) / (r.checks_applicable || 12)) * 100),
-            status: r.status === "completed" ? "Completed" : "Processing",
-          };
-        })
-      );
+      if (runs && runs.length > 0) {
+        dbRuns = await Promise.all(
+          runs.map(async (r: any, i: number) => {
+            const { data: proj } = await supabase.from("projects").select("name").eq("id", r.project_id).maybeSingle();
+            return {
+              id: r.id,
+              number: `Run #${runs.length - i}`,
+              date: fmtDate(r.created_at.slice(0, 10)),
+              projectName: proj?.name || "Gujarat Solar 100MW",
+              methodology: r.methodology_code || "ACM0002",
+              passed: r.checks_passed || 10,
+              total: r.checks_applicable || 12,
+              readiness: Math.round(((r.checks_passed || 10) / (r.checks_applicable || 12)) * 100),
+              status: r.status === "completed" ? "Completed" : "Processing",
+            };
+          })
+        );
+      }
+    } catch (e) {
+      console.warn("Runs DB query fallback:", e);
     }
   }
 

@@ -71,16 +71,20 @@ export default async function ProjectPage({
   let periods: any[] = [];
   let realDocs: any[] = [];
 
-  if (org) {
-    const { data: p } = await supabase.from("projects").select("*").eq("id", projectId).maybeSingle();
-    project = p;
-    if (project) {
-      const [{ data: per }, { data: docs }] = await Promise.all([
-        supabase.from("monitoring_periods").select("*").eq("project_id", projectId).order("start_date", { ascending: false }),
-        supabase.from("documents").select("*").eq("project_id", projectId).order("created_at", { ascending: false }),
-      ]);
-      periods = per || [];
-      realDocs = docs || [];
+  if (org && supabase?.from) {
+    try {
+      const { data: p } = await supabase.from("projects").select("*").eq("id", projectId).maybeSingle();
+      project = p;
+      if (project) {
+        const [{ data: per }, { data: docs }] = await Promise.all([
+          supabase.from("monitoring_periods").select("*").eq("project_id", projectId).order("start_date", { ascending: false }),
+          supabase.from("documents").select("*").eq("project_id", projectId).order("created_at", { ascending: false }),
+        ]);
+        periods = per || [];
+        realDocs = docs || [];
+      }
+    } catch (e) {
+      console.warn("Project detail DB query fallback:", e);
     }
   }
 

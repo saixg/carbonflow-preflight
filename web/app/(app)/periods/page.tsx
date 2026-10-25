@@ -48,25 +48,29 @@ export default async function Periods() {
   const { supabase, org } = await getSession();
   let dbPeriods: any[] = [];
 
-  if (org) {
-    const { data } = await supabase
-      .from("monitoring_periods")
-      .select("id, start_date, end_date, status, projects(id, name)")
-      .order("start_date", { ascending: false });
+  if (org && supabase?.from) {
+    try {
+      const { data } = await supabase
+        .from("monitoring_periods")
+        .select("id, start_date, end_date, status, projects(id, name)")
+        .order("start_date", { ascending: false });
 
-    if (data && data.length > 0) {
-      dbPeriods = data.map((p) => {
-        const pr = Array.isArray(p.projects) ? p.projects[0] : p.projects;
-        return {
-          id: p.id,
-          projectId: pr?.id || "proj-solar-raj",
-          projectName: pr?.name || "Gujarat Solar 100MW",
-          start: p.start_date,
-          end: p.end_date,
-          status: p.status,
-          documentsCount: 2,
-        };
-      });
+      if (data && data.length > 0) {
+        dbPeriods = data.map((p: any) => {
+          const pr = Array.isArray(p.projects) ? p.projects[0] : p.projects;
+          return {
+            id: p.id,
+            projectId: pr?.id || "proj-solar-raj",
+            projectName: pr?.name || "Gujarat Solar 100MW",
+            start: p.start_date,
+            end: p.end_date,
+            status: p.status,
+            documentsCount: 2,
+          };
+        });
+      }
+    } catch (e) {
+      console.warn("Periods DB query fallback:", e);
     }
   }
 

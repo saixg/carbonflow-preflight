@@ -56,12 +56,16 @@ export default async function Projects() {
   const { supabase, org } = await getSession();
 
   let dbProjects: any[] = [];
-  if (org) {
-    const { data } = await supabase
-      .from("projects")
-      .select("id, name, project_type, status, methodology_id, methodology_version")
-      .order("created_at", { ascending: false });
-    if (data && data.length > 0) dbProjects = data;
+  if (org && supabase?.from) {
+    try {
+      const { data } = await supabase
+        .from("projects")
+        .select("id, name, project_type, status, methodology_id, methodology_version")
+        .order("created_at", { ascending: false });
+      if (data && data.length > 0) dbProjects = data;
+    } catch (e) {
+      console.warn("Projects DB query fallback:", e);
+    }
   }
 
   const list: ProjectCardItem[] = [

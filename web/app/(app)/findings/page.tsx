@@ -9,24 +9,28 @@ export default async function Findings() {
 
   let initialFindings: FindingItem[] | undefined = undefined;
 
-  if (org) {
-    const { data } = await supabase
-      .from("findings")
-      .select("id, rule_code, severity, status, title, explanation, remediation")
-      .eq("org_id", org.id)
-      .order("created_at", { ascending: false });
+  if (org && supabase?.from) {
+    try {
+      const { data } = await supabase
+        .from("findings")
+        .select("id, rule_code, severity, status, title, explanation, remediation")
+        .eq("org_id", org.id)
+        .order("created_at", { ascending: false });
 
-    if (data && data.length > 0) {
-      initialFindings = data.map((f) => ({
-        id: f.id,
-        rule: f.rule_code,
-        severity: f.severity,
-        status: f.status,
-        title: f.title,
-        detail: f.explanation,
-        sources: 1,
-        remediation: f.remediation ?? undefined,
-      }));
+      if (data && data.length > 0) {
+        initialFindings = data.map((f: any) => ({
+          id: f.id,
+          rule: f.rule_code,
+          severity: f.severity,
+          status: f.status,
+          title: f.title,
+          detail: f.explanation,
+          sources: 1,
+          remediation: f.remediation ?? undefined,
+        }));
+      }
+    } catch (e) {
+      console.warn("Findings DB query fallback:", e);
     }
   }
 

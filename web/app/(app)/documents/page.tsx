@@ -12,40 +12,44 @@ export default async function DocumentsPage() {
   let realDocs: any[] = [];
   let extractedItems: ExtractedEvidenceItem[] = [];
 
-  if (org) {
-    const [{ data: docs }, { data: vals }] = await Promise.all([
-      supabase.from("documents").select("*").eq("org_id", org.id).order("created_at", { ascending: false }),
-      supabase
-        .from("parameter_values")
-        .select("id, parameter_defs(parameter_code, name), original_value, normalized_value, normalized_date, unit, review_status, evidence_refs(page_number, source_text, locator), documents(filename)")
-        .eq("org_id", org.id)
-        .order("created_at", { ascending: false }),
-    ]);
+  if (org && supabase?.from) {
+    try {
+      const [{ data: docs }, { data: vals }] = await Promise.all([
+        supabase.from("documents").select("*").eq("org_id", org.id).order("created_at", { ascending: false }),
+        supabase
+          .from("parameter_values")
+          .select("id, parameter_defs(parameter_code, name), original_value, normalized_value, normalized_date, unit, review_status, evidence_refs(page_number, source_text, locator), documents(filename)")
+          .eq("org_id", org.id)
+          .order("created_at", { ascending: false }),
+      ]);
 
-    realDocs = docs || [];
+      realDocs = docs || [];
 
-    if (vals && vals.length > 0) {
-      extractedItems = vals
-        .filter((v: any) => v.evidence_refs || v.original_value)
-        .map((v: any, i: number) => {
-          const ev = Array.isArray(v.evidence_refs) ? v.evidence_refs[0] : v.evidence_refs;
-          const pdef = Array.isArray(v.parameter_defs) ? v.parameter_defs[0] : v.parameter_defs;
-          const doc = Array.isArray(v.documents) ? v.documents[0] : v.documents;
+      if (vals && vals.length > 0) {
+        extractedItems = vals
+          .filter((v: any) => v.evidence_refs || v.original_value)
+          .map((v: any, i: number) => {
+            const ev = Array.isArray(v.evidence_refs) ? v.evidence_refs[0] : v.evidence_refs;
+            const pdef = Array.isArray(v.parameter_defs) ? v.parameter_defs[0] : v.parameter_defs;
+            const doc = Array.isArray(v.documents) ? v.documents[0] : v.documents;
 
-          return {
-            id: v.id,
-            label: pdef?.name || pdef?.parameter_code || `Parameter #${i + 1}`,
-            value: v.original_value || String(v.normalized_value ?? v.normalized_date ?? ""),
-            unit: v.unit || "",
-            page: ev?.page_number || 1,
-            confidence: 0.98,
-            tier: "high" as const,
-            sourceText: ev?.source_text,
-            locator: ev?.locator,
-            reviewStatus: v.review_status,
-            docName: doc?.filename,
-          };
-        });
+            return {
+              id: v.id,
+              label: pdef?.name || pdef?.parameter_code || `Parameter #${i + 1}`,
+              value: v.original_value || String(v.normalized_value ?? v.normalized_date ?? ""),
+              unit: v.unit || "",
+              page: ev?.page_number || 1,
+              confidence: 0.98,
+              tier: "high" as const,
+              sourceText: ev?.source_text,
+              locator: ev?.locator,
+              reviewStatus: v.review_status,
+              docName: doc?.filename,
+            };
+          });
+      }
+    } catch (e) {
+      console.warn("Documents DB query fallback:", e);
     }
   }
 

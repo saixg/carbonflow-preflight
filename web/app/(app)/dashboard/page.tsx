@@ -56,18 +56,22 @@ export default async function Dashboard() {
   let findingCount = 18;
   let totalProjects = 8;
 
-  if (org) {
-    const [{ data: pList }, { count: dCount }, { count: fCount }] = await Promise.all([
-      supabase.from("projects").select("id, name, project_type, methodology_id, methodology_version").order("created_at", { ascending: false }),
-      supabase.from("documents").select("id", { count: "exact", head: true }),
-      supabase.from("findings").select("id", { count: "exact", head: true }).eq("status", "open"),
-    ]);
-    if (pList && pList.length > 0) {
-      dbProjects = pList;
-      totalProjects = Math.max(pList.length, 8);
+  if (org && supabase?.from) {
+    try {
+      const [{ data: pList }, { count: dCount }, { count: fCount }] = await Promise.all([
+        supabase.from("projects").select("id, name, project_type, methodology_id, methodology_version").order("created_at", { ascending: false }),
+        supabase.from("documents").select("id", { count: "exact", head: true }),
+        supabase.from("findings").select("id", { count: "exact", head: true }).eq("status", "open"),
+      ]);
+      if (pList && pList.length > 0) {
+        dbProjects = pList;
+        totalProjects = Math.max(pList.length, 8);
+      }
+      if (typeof dCount === "number" && dCount > 0) docCount = Math.max(dCount, 47);
+      if (typeof fCount === "number" && fCount > 0) findingCount = fCount;
+    } catch (e) {
+      console.warn("Dashboard DB query fallback:", e);
     }
-    if (typeof dCount === "number" && dCount > 0) docCount = Math.max(dCount, 47);
-    if (typeof fCount === "number" && fCount > 0) findingCount = fCount;
   }
 
   // Merge real DB projects with the demo projects showcase from screenshot

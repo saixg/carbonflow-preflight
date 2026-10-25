@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       .select("id, filename, media_type, sha256")
       .eq("monitoring_period_id", run.monitoring_period_id);
 
-    const docList: ReportDocument[] = (rawDocs || []).map((d) => ({
+    const docList: ReportDocument[] = (rawDocs || []).map((d: any) => ({
       id: d.id,
       name: d.filename,
       sha256: d.sha256,
@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       project_name: prName || "Carbon Project",
       methodology: run.methodology_code ? `${run.methodology_code} ${run.methodology_version || ""}`.trim() : undefined,
       documents: docList,
-      findings: findingList.map((f) => ({
+      findings: findingList.map((f: any) => ({
         id: f.id,
         rule_code: f.rule_code,
         severity: f.severity,

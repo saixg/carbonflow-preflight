@@ -42,36 +42,40 @@ export default async function RunDetailsPage({
   let checks: any[] = [];
   let findingsList: FindingItem[] = [];
 
-  if (org && runId !== "sample") {
-    const { data: runData } = await supabase
-      .from("runs")
-      .select("*")
-      .eq("id", runId)
-      .eq("org_id", org.id)
-      .maybeSingle();
+  if (org && runId !== "sample" && supabase?.from) {
+    try {
+      const { data: runData } = await supabase
+        .from("runs")
+        .select("*")
+        .eq("id", runId)
+        .eq("org_id", org.id)
+        .maybeSingle();
 
-    if (runData) {
-      run = runData;
-      checks = Array.isArray(run.checks) ? run.checks : [];
+      if (runData) {
+        run = runData;
+        checks = Array.isArray(run.checks) ? run.checks : [];
 
-      const [{ data: proj }, { data: dbFindings }] = await Promise.all([
-        supabase.from("projects").select("name").eq("id", run.project_id).maybeSingle(),
-        supabase.from("findings").select("id, rule_code, severity, status, title, explanation, remediation").eq("run_id", run.id),
-      ]);
+        const [{ data: proj }, { data: dbFindings }] = await Promise.all([
+          supabase.from("projects").select("name").eq("id", run.project_id).maybeSingle(),
+          supabase.from("findings").select("id, rule_code, severity, status, title, explanation, remediation").eq("run_id", run.id),
+        ]);
 
-      if (proj) projectName = proj.name;
-      methodologyStr = `${run.methodology_code || "ACM0002"} | Rulepack v1.2 | Engine ${run.engine_version || "v0.3.1"}`;
+        if (proj) projectName = proj.name;
+        methodologyStr = `${run.methodology_code || "ACM0002"} | Rulepack v1.2 | Engine ${run.engine_version || "v0.3.1"}`;
 
-      findingsList = (dbFindings || []).map((f) => ({
-        id: f.id,
-        rule: f.rule_code,
-        severity: f.severity,
-        status: f.status,
-        title: f.title,
-        detail: f.explanation,
-        sources: 3,
-        remediation: f.remediation ?? undefined,
-      }));
+        findingsList = (dbFindings || []).map((f: any) => ({
+          id: f.id,
+          rule: f.rule_code,
+          severity: f.severity,
+          status: f.status,
+          title: f.title,
+          detail: f.explanation,
+          sources: 3,
+          remediation: f.remediation ?? undefined,
+        }));
+      }
+    } catch (e) {
+      console.warn("Run details DB query fallback:", e);
     }
   }
 

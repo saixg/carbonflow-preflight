@@ -7,18 +7,22 @@ export default async function Reports() {
   const { supabase, org } = await getSession();
 
   let runId = "sample";
-  if (org) {
-    const { data: latestRun } = await supabase
-      .from("runs")
-      .select("id")
-      .eq("org_id", org.id)
-      .eq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  if (org && supabase?.from) {
+    try {
+      const { data: latestRun } = await supabase
+        .from("runs")
+        .select("id")
+        .eq("org_id", org.id)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (latestRun) {
-      runId = latestRun.id;
+      if (latestRun) {
+        runId = latestRun.id;
+      }
+    } catch (e) {
+      console.warn("Reports DB query fallback:", e);
     }
   }
 
