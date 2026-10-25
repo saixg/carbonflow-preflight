@@ -13,8 +13,12 @@ import {
   CaretLeft,
   CaretRight,
   ListDashes,
+  Copy,
+  Check,
+  MagnifyingGlass,
+  Warning,
+  Sparkle,
 } from "@phosphor-icons/react/ssr";
-import { sampleExtracted } from "@/lib/sample";
 
 export interface ExtractedEvidenceItem {
   id: string;
@@ -86,6 +90,28 @@ const defaultSampleItems: ExtractedEvidenceItem[] = [
     sourceText: "The combined margin grid emission factor applied is 0.82 tCO2/MWh.",
     docName: "Monitoring_Report_2023.pdf",
   },
+  {
+    id: "x6",
+    label: "Transmission Loss Discount",
+    value: "3.5",
+    unit: "%",
+    confidence: 0.89,
+    page: 8,
+    tier: "high",
+    sourceText: "Grid transmission loss deduction of 3.5% was applied at the 220kV pooling substation interface.",
+    docName: "Monitoring_Report_2023.pdf",
+  },
+  {
+    id: "x7",
+    label: "Specific Fuel Consumption Benchmark",
+    value: "0.32",
+    unit: "kg/kWh",
+    confidence: 0.68,
+    page: 16,
+    tier: "med",
+    sourceText: "Captive diesel benchmark of 0.32 kg/kWh is assumed for standby auxiliary power systems.",
+    docName: "Monitoring_Report_2023.pdf",
+  },
 ];
 
 export function EvidenceViewer({
@@ -98,21 +124,41 @@ export function EvidenceViewer({
 
   const [active, setActive] = useState<string>("x1");
   const [filterTier, setFilterTier] = useState<"all" | "high" | "review">("all");
-  const [zoom, setZoom] = useState<number>(150);
+  const [search, setSearch] = useState<string>("");
+  const [zoom, setZoom] = useState<number>(140);
   const [page, setPage] = useState<number>(12);
   const [totalPages] = useState<number>(24);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const activeItem = items.find((x) => x.id === active) || items[0];
 
+  const highCount = items.filter((x) => x.confidence >= 0.85).length;
+  const reviewCount = items.filter((x) => x.confidence < 0.85).length;
+
   const filteredItems = items.filter((x) => {
-    if (filterTier === "high") return x.tier === "high" || x.confidence >= 0.85;
-    if (filterTier === "review") return x.tier === "med" || x.confidence < 0.85;
-    return true;
+    const matchesTier =
+      filterTier === "all"
+        ? true
+        : filterTier === "high"
+        ? x.confidence >= 0.85
+        : x.confidence < 0.85;
+
+    const matchesSearch =
+      search.trim() === "" ||
+      (x.label + " " + x.value + " " + (x.sourceText || "")).toLowerCase().includes(search.toLowerCase());
+
+    return matchesTier && matchesSearch;
   });
 
   const jumpToItem = (item: ExtractedEvidenceItem) => {
     setActive(item.id);
     setPage(item.page || 12);
+  };
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   return (
@@ -136,9 +182,10 @@ export function EvidenceViewer({
             flexDirection: "column",
             background: "var(--bg-2)",
             border: "1px solid var(--line)",
+            boxShadow: "0 16px 40px rgba(0, 0, 0, 0.4)",
           }}
         >
-          {/* Document Top Action Toolbar (matching Screen 4) */}
+          {/* Document Top Action Toolbar */}
           <div
             style={{
               display: "flex",
@@ -151,13 +198,6 @@ export function EvidenceViewer({
           >
             {/* Left: Page Navigator */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <button
-                className="icon-btn"
-                style={{ width: 32, height: 32 }}
-                title="Thumbnails sidebar"
-              >
-                <ListDashes size={16} />
-              </button>
               <div
                 style={{
                   display: "flex",
@@ -173,16 +213,18 @@ export function EvidenceViewer({
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   style={{ background: "none", border: 0, cursor: "pointer", color: "var(--muted)", padding: 0 }}
                   title="Previous page"
+                  aria-label="Previous page"
                 >
                   <CaretLeft size={14} />
                 </button>
                 <span className="mono" style={{ fontWeight: 600 }}>
-                  {page} / {totalPages}
+                  Page {page} of {totalPages}
                 </span>
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   style={{ background: "none", border: 0, cursor: "pointer", color: "var(--muted)", padding: 0 }}
                   title="Next page"
+                  aria-label="Next page"
                 >
                   <CaretRight size={14} />
                 </button>
@@ -192,21 +234,35 @@ export function EvidenceViewer({
             {/* Center: Zoom Controls */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <button
-                onClick={() => setZoom((z) => Math.max(80, z - 10))}
+                onClick={() => setZoom((z) => Math.max(90, z - 10))}
                 className="icon-btn"
                 style={{ width: 30, height: 30 }}
                 title="Zoom out"
+                aria-label="Zoom out"
               >
                 <MagnifyingGlassMinus size={14} />
               </button>
-              <span className="mono muted" style={{ fontSize: 12, minWidth: 44, textAlign: "center" }}>
-                {zoom}%
-              </span>
               <button
-                onClick={() => setZoom((z) => Math.min(200, z + 10))}
+                onClick={() => setZoom(140)}
+                style={{
+                  background: "transparent",
+                  border: 0,
+                  fontSize: 12,
+                  color: "var(--dim)",
+                  cursor: "pointer",
+                  padding: "2px 6px",
+                  borderRadius: 4,
+                }}
+                title="Reset zoom to 140%"
+              >
+                <span className="mono">{zoom}%</span>
+              </button>
+              <button
+                onClick={() => setZoom((z) => Math.min(180, z + 10))}
                 className="icon-btn"
                 style={{ width: 30, height: 30 }}
                 title="Zoom in"
+                aria-label="Zoom in"
               >
                 <MagnifyingGlassPlus size={14} />
               </button>
@@ -214,14 +270,17 @@ export function EvidenceViewer({
 
             {/* Right: Actions */}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <button className="icon-btn" style={{ width: 30, height: 30 }} title="Rotate clockwise">
-                <ArrowsClockwise size={14} />
-              </button>
-              <button className="icon-btn" style={{ width: 30, height: 30 }} title="Download original document">
-                <DownloadSimple size={14} />
-              </button>
-              <button className="icon-btn" style={{ width: 30, height: 30 }} title="Toggle fullscreen view">
-                <ArrowsOut size={14} />
+              <button
+                onClick={() => {
+                  const pages = [3, 5, 8, 12, 14, 16];
+                  const nextIdx = (pages.indexOf(page) + 1) % pages.length;
+                  setPage(pages[nextIdx]);
+                }}
+                className="btn btn-sm"
+                style={{ height: 30, padding: "0 10px", fontSize: 12, background: "rgba(255,255,255,0.03)" }}
+                title="Jump to next cited page"
+              >
+                Next Citation
               </button>
             </div>
           </div>
@@ -241,29 +300,30 @@ export function EvidenceViewer({
                 background: "rgba(0, 0, 0, 0.2)",
               }}
             >
-              {[1, 2, 3, 5, 12, 14].map((pNum) => (
+              {[1, 2, 3, 5, 8, 12, 14, 16].map((pNum) => (
                 <button
                   key={pNum}
                   onClick={() => setPage(pNum)}
                   style={{
                     width: 50,
                     height: 64,
-                    borderRadius: 4,
-                    background: pNum === page ? "rgba(61, 220, 151, 0.15)" : "#162520",
+                    borderRadius: 6,
+                    background: pNum === page ? "rgba(61, 220, 151, 0.16)" : "#14221d",
                     border: `1.5px solid ${pNum === page ? "var(--accent)" : "rgba(255, 255, 255, 0.08)"}`,
                     cursor: "pointer",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    padding: 4,
+                    padding: 5,
                     transition: "all 0.15s ease",
+                    boxShadow: pNum === page ? "0 0 12px rgba(61, 220, 151, 0.25)" : "none",
                   }}
                   title={`Page ${pNum}`}
                 >
-                  <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.2)", borderRadius: 1 }} />
-                  <div style={{ width: "80%", height: 3, background: "rgba(255,255,255,0.15)", borderRadius: 1 }} />
-                  <div style={{ width: "90%", height: 3, background: "rgba(255,255,255,0.15)", borderRadius: 1 }} />
-                  <span className="mono" style={{ fontSize: 9, color: pNum === page ? "var(--accent)" : "var(--dim)", alignSelf: "center" }}>
+                  <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.25)", borderRadius: 1 }} />
+                  <div style={{ width: "80%", height: 3, background: "rgba(255,255,255,0.18)", borderRadius: 1 }} />
+                  <div style={{ width: "90%", height: 3, background: "rgba(255,255,255,0.18)", borderRadius: 1 }} />
+                  <span className="mono" style={{ fontSize: 9, color: pNum === page ? "var(--accent)" : "var(--dim)", alignSelf: "center", fontWeight: pNum === page ? 700 : 500 }}>
                     {pNum}
                   </span>
                 </button>
@@ -293,12 +353,12 @@ export function EvidenceViewer({
                   fontSize: 13.5,
                   lineHeight: 1.65,
                   fontFamily: "var(--sans)",
-                  transform: `scale(${zoom / 150})`,
+                  transform: `scale(${zoom / 140})`,
                   transformOrigin: "top center",
                   transition: "transform 0.15s ease",
                 }}
               >
-                {/* Header matching Screen 4 */}
+                {/* Header */}
                 <div style={{ borderBottom: "1.5px solid #d8dfdb", paddingBottom: 16, marginBottom: 24 }}>
                   <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "1px", color: "#667a70", fontWeight: 600 }}>
                     Project Ref: 2023-SOLAR-094
@@ -311,7 +371,7 @@ export function EvidenceViewer({
                   </div>
                 </div>
 
-                {/* Section Content */}
+                {/* Section Content Dynamic per Page */}
                 <div style={{ display: "grid", gap: 16 }}>
                   {page === 12 ? (
                     <>
@@ -399,11 +459,11 @@ export function EvidenceViewer({
                       </h3>
                       <p style={{ margin: 0 }}>
                         The third periodic monitoring verification covers the period from{" "}
-                        <span style={{ background: "#ffdc5c", padding: "1px 4px", borderRadius: 3, fontWeight: 600 }}>
+                        <span style={{ background: "#ffdc5c", padding: "2px 6px", borderRadius: 3, fontWeight: 700, color: "#0b1411" }}>
                           01 January 2023
                         </span>{" "}
                         to{" "}
-                        <span style={{ background: "#ffdc5c", padding: "1px 4px", borderRadius: 3, fontWeight: 600 }}>
+                        <span style={{ background: "#ffdc5c", padding: "2px 6px", borderRadius: 3, fontWeight: 700, color: "#0b1411" }}>
                           31 December 2023
                         </span>
                         , encompassing 365 calendar days without discontinuity.
@@ -417,10 +477,23 @@ export function EvidenceViewer({
                       <p style={{ margin: 0 }}>
                         The project consists of monocrystalline silicon photovoltaic modules with total aggregate nameplate
                         capacity of{" "}
-                        <span style={{ background: "#ffdc5c", padding: "1px 4px", borderRadius: 3, fontWeight: 600 }}>
+                        <span style={{ background: "#ffdc5c", padding: "2px 6px", borderRadius: 3, fontWeight: 700, color: "#0b1411" }}>
                           100 MW
                         </span>
-                        .
+                        . Commissioning certificate validated under engineering register.
+                      </p>
+                    </>
+                  ) : page === 8 ? (
+                    <>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, color: "#14241e", margin: 0 }}>
+                        2.1 Substation Transmission & Discount Factor
+                      </h3>
+                      <p style={{ margin: 0 }}>
+                        In accordance with regional transmission operator tariffs, a standard transmission deduction of{" "}
+                        <span style={{ background: "#ffdc5c", padding: "2px 6px", borderRadius: 3, fontWeight: 700, color: "#0b1411" }}>
+                          3.5%
+                        </span>{" "}
+                        was applied to gross production at the 220kV busbar interface.
                       </p>
                     </>
                   ) : page === 14 ? (
@@ -429,10 +502,23 @@ export function EvidenceViewer({
                         3.1 Emission Factor Calculation
                       </h3>
                       <p style={{ margin: 0 }}>
-                        In accordance with the approved CDM methodology ACM0002, the baseline grid emission factor
+                        In accordance with the approved CDM methodology ACM0002, the combined margin grid emission factor
                         applied is{" "}
-                        <span style={{ background: "#ffdc5c", padding: "1px 4px", borderRadius: 3, fontWeight: 600 }}>
+                        <span style={{ background: "#ffdc5c", padding: "2px 6px", borderRadius: 3, fontWeight: 700, color: "#0b1411" }}>
                           0.82 tCO2/MWh
+                        </span>
+                        .
+                      </p>
+                    </>
+                  ) : page === 16 ? (
+                    <>
+                      <h3 style={{ fontSize: 16, fontWeight: 700, color: "#14241e", margin: 0 }}>
+                        3.4 Auxiliary Fuel Benchmark
+                      </h3>
+                      <p style={{ margin: 0 }}>
+                        The baseline specific fuel consumption benchmark applied for emergency black-start diesel generators is{" "}
+                        <span style={{ background: "#ffdc5c", padding: "2px 6px", borderRadius: 3, fontWeight: 700, color: "#0b1411" }}>
+                          0.32 kg/kWh
                         </span>
                         .
                       </p>
@@ -449,33 +535,41 @@ export function EvidenceViewer({
           </div>
         </div>
 
-        {/* Right: Extracted Data Panel (matching Screen 4) */}
+        {/* Right: Extracted Data Panel */}
         <div style={{ display: "grid", gap: 16 }}>
           <div className="card" style={{ padding: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Extracted Data</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div>
+                <h2 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Extracted Evidence</h2>
+                <p className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                  Parameters verified against PDF source
+                </p>
+              </div>
+              <span className="mono" style={{ fontSize: 12, color: "var(--accent)", background: "rgba(61, 220, 151, 0.1)", padding: "2px 8px", borderRadius: 999 }}>
+                {filteredItems.length} fields
+              </span>
             </div>
 
-            {/* Filter Tabs */}
+            {/* Quick Filter Tabs */}
             <div
               style={{
                 display: "flex",
-                gap: 6,
+                gap: 4,
                 background: "var(--bg-2)",
-                padding: 4,
-                borderRadius: 10,
+                padding: 3,
+                borderRadius: 8,
                 border: "1px solid var(--line)",
-                marginBottom: 16,
+                marginBottom: 12,
               }}
             >
               <button
                 onClick={() => setFilterTier("all")}
                 style={{
                   flex: 1,
-                  padding: "6px 8px",
-                  borderRadius: 7,
+                  padding: "5px 8px",
+                  borderRadius: 6,
                   border: 0,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
                   background: filterTier === "all" ? "var(--surface-2)" : "transparent",
@@ -483,16 +577,16 @@ export function EvidenceViewer({
                   transition: "all 0.15s ease",
                 }}
               >
-                All Fields ({items.length})
+                All ({items.length})
               </button>
               <button
                 onClick={() => setFilterTier("high")}
                 style={{
                   flex: 1,
-                  padding: "6px 8px",
-                  borderRadius: 7,
+                  padding: "5px 8px",
+                  borderRadius: 6,
                   border: 0,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
                   background: filterTier === "high" ? "var(--surface-2)" : "transparent",
@@ -500,16 +594,16 @@ export function EvidenceViewer({
                   transition: "all 0.15s ease",
                 }}
               >
-                High Confidence (15)
+                High Conf ({highCount})
               </button>
               <button
                 onClick={() => setFilterTier("review")}
                 style={{
                   flex: 1,
-                  padding: "6px 8px",
-                  borderRadius: 7,
+                  padding: "5px 8px",
+                  borderRadius: 6,
                   border: 0,
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: 600,
                   cursor: "pointer",
                   background: filterTier === "review" ? "var(--surface-2)" : "transparent",
@@ -517,131 +611,136 @@ export function EvidenceViewer({
                   transition: "all 0.15s ease",
                 }}
               >
-                Needs Review (3)
+                Review ({reviewCount})
               </button>
             </div>
 
-            {/* Extracted Parameter Cards */}
-            <div style={{ display: "grid", gap: 12 }}>
-              {/* Card 1: Net Electricity Exported */}
-              <div
+            {/* Search input */}
+            <div style={{ position: "relative", marginBottom: 14 }}>
+              <MagnifyingGlass size={14} style={{ position: "absolute", left: 10, top: 10, color: "var(--dim)" }} />
+              <input
+                type="text"
+                placeholder="Filter extracted parameters..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: active === "x1" ? "rgba(61, 220, 151, 0.08)" : "var(--surface-2)",
-                  border: `1.5px solid ${active === "x1" ? "var(--accent)" : "var(--line)"}`,
-                  display: "grid",
-                  gap: 10,
-                  transition: "all 0.2s ease",
+                  width: "100%",
+                  height: 34,
+                  padding: "0 10px 0 32px",
+                  fontSize: 12,
+                  borderRadius: 8,
+                  background: "var(--surface-2)",
+                  border: "1px solid var(--line)",
+                  color: "var(--text)",
                 }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                  <div>
-                    <span className="muted" style={{ fontSize: 12 }}>Net Electricity Exported</span>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 4 }}>
-                      <strong className="mono" style={{ fontSize: 24, fontWeight: 700 }}>152,345</strong>
-                      <span className="muted" style={{ fontSize: 13 }}>MWh</span>
+              />
+            </div>
+
+            {/* Dynamic Parameter Cards List */}
+            <div style={{ display: "grid", gap: 10, maxHeight: 600, overflowY: "auto", paddingRight: 2 }}>
+              {filteredItems.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "28px 12px", color: "var(--muted)", fontSize: 13 }}>
+                  No fields match search criteria
+                </div>
+              ) : (
+                filteredItems.map((item) => {
+                  const isSelected = active === item.id;
+                  const isHigh = item.confidence >= 0.85;
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => jumpToItem(item)}
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: 10,
+                        background: isSelected ? "rgba(61, 220, 151, 0.08)" : "var(--surface-2)",
+                        border: `1.5px solid ${isSelected ? "var(--accent)" : "var(--line)"}`,
+                        display: "grid",
+                        gap: 8,
+                        cursor: "pointer",
+                        transition: "all 0.18s cubic-bezier(0.16, 1, 0.3, 1)",
+                        boxShadow: isSelected ? "0 4px 18px rgba(61, 220, 151, 0.15)" : "none",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <span className="muted" style={{ fontSize: 12, display: "block", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                            {item.label}
+                          </span>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 3 }}>
+                            <strong className="mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--text)" }}>
+                              {item.value}
+                            </strong>
+                            {item.unit && <span className="muted" style={{ fontSize: 12 }}>{item.unit}</span>}
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <span
+                            className={`badge-count ${isHigh ? "ok" : "warn"}`}
+                            style={{ fontSize: 11, padding: "2px 7px" }}
+                          >
+                            {Math.round(item.confidence * 100)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          paddingTop: 8,
+                          borderTop: "1px solid var(--line)",
+                          fontSize: 11,
+                        }}
+                      >
+                        <span className="muted">
+                          Source: <span style={{ color: isSelected ? "var(--accent)" : "var(--text)", fontWeight: 600 }}>Page {item.page}</span>
+                        </span>
+
+                        <div style={{ display: "flex", gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleCopy(`${item.value} ${item.unit}`.trim(), item.id)}
+                            className="btn btn-sm"
+                            style={{
+                              height: 24,
+                              padding: "0 8px",
+                              fontSize: 11,
+                              borderRadius: 4,
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid var(--line)",
+                              color: copiedId === item.id ? "var(--accent)" : "var(--muted)",
+                            }}
+                            title="Copy value"
+                          >
+                            {copiedId === item.id ? <Check size={11} /> : <Copy size={11} />}
+                            {copiedId === item.id ? "Copied" : "Copy"}
+                          </button>
+
+                          <button
+                            onClick={() => jumpToItem(item)}
+                            className="btn btn-sm"
+                            style={{
+                              height: 24,
+                              padding: "0 8px",
+                              fontSize: 11,
+                              borderRadius: 4,
+                              background: isSelected ? "var(--accent)" : "rgba(61, 220, 151, 0.12)",
+                              borderColor: isSelected ? "var(--accent)" : "rgba(61, 220, 151, 0.35)",
+                              color: isSelected ? "#04120c" : "var(--accent)",
+                              fontWeight: 600,
+                            }}
+                          >
+                            <Crosshair size={11} weight="bold" /> View
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <span className="muted" style={{ fontSize: 11, display: "block", marginBottom: 2 }}>Confidence</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span className="mono" style={{ fontSize: 13, fontWeight: 600 }}>0.95</span>
-                      <span className="badge-count ok">High</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    paddingTop: 10,
-                    borderTop: "1px solid var(--line)",
-                  }}
-                >
-                  <span className="muted" style={{ fontSize: 12 }}>
-                    Source: <span style={{ color: "var(--text)", fontWeight: 500 }}>Page 12</span>
-                  </span>
-                  <button
-                    onClick={() => {
-                      setActive("x1");
-                      setPage(12);
-                    }}
-                    className="btn btn-sm"
-                    style={{
-                      height: 28,
-                      padding: "0 10px",
-                      fontSize: 12,
-                      background: "rgba(61, 220, 151, 0.12)",
-                      borderColor: "rgba(61, 220, 151, 0.35)",
-                      color: "var(--accent)",
-                      borderRadius: 999,
-                    }}
-                  >
-                    <Crosshair size={13} weight="bold" /> View in Document
-                  </button>
-                </div>
-              </div>
-
-              {/* Card 2: Monitoring Period Start & End Grid */}
-              <div
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: active === "x2" || active === "x3" ? "rgba(61, 220, 151, 0.08)" : "var(--surface-2)",
-                  border: `1.5px solid ${active === "x2" || active === "x3" ? "var(--accent)" : "var(--line)"}`,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 14,
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  setActive("x2");
-                  setPage(3);
-                }}
-              >
-                <div>
-                  <span className="muted" style={{ fontSize: 12 }}>Monitoring Period Start</span>
-                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>01 Jan 2023</div>
-                  <span className="badge-count ok" style={{ marginTop: 6 }}>High</span>
-                </div>
-                <div>
-                  <span className="muted" style={{ fontSize: 12 }}>Monitoring Period End</span>
-                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>31 Dec 2023</div>
-                  <span className="badge-count ok" style={{ marginTop: 6 }}>High</span>
-                </div>
-              </div>
-
-              {/* Card 3: Installed Capacity & Grid Emission Factor Grid */}
-              <div
-                style={{
-                  padding: 16,
-                  borderRadius: 12,
-                  background: active === "x4" || active === "x5" ? "rgba(61, 220, 151, 0.08)" : "var(--surface-2)",
-                  border: `1.5px solid ${active === "x4" || active === "x5" ? "var(--accent)" : "var(--line)"}`,
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 14,
-                  cursor: "pointer",
-                }}
-                onClick={() => {
-                  setActive("x4");
-                  setPage(5);
-                }}
-              >
-                <div>
-                  <span className="muted" style={{ fontSize: 12 }}>Installed Capacity</span>
-                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>100 MW</div>
-                  <span className="badge-count warn" style={{ marginTop: 6 }}>Medium</span>
-                </div>
-                <div>
-                  <span className="muted" style={{ fontSize: 12 }}>Grid Emission Factor</span>
-                  <div style={{ fontSize: 15, fontWeight: 600, marginTop: 4 }}>0.82 tCO2/MWh</div>
-                  <span className="badge-count ok" style={{ marginTop: 6 }}>High</span>
-                </div>
-              </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>

@@ -36,6 +36,12 @@ export function ReportView({
   initialManifest?: EvidenceManifest;
 }) {
   const [activeSec, setActiveSec] = useState("Executive Summary");
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const handleDownload = (fmt: string) => {
+    setDownloading(fmt);
+    setTimeout(() => setDownloading(null), 2500);
+  };
 
   // Manifest calculation
   const manifest = useMemo<EvidenceManifest>(() => {
@@ -105,25 +111,28 @@ export function ReportView({
             href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=markdown`}
             className="btn btn-sm"
             style={{ borderRadius: 999, background: "rgba(255,255,255,0.04)" }}
+            onClick={() => handleDownload("pdf")}
             download
           >
-            <FilePdf size={15} /> Download PDF
+            <FilePdf size={15} /> {downloading === "pdf" ? "Preparing PDF..." : "Download PDF"}
           </a>
           <a
             href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=csv`}
             className="btn btn-sm"
             style={{ borderRadius: 999, background: "rgba(255,255,255,0.04)" }}
+            onClick={() => handleDownload("excel")}
             download
           >
-            <FileXls size={15} /> Download Excel
+            <FileXls size={15} /> {downloading === "excel" ? "Generating Excel..." : "Download Excel"}
           </a>
           <a
             href={`/api/reports/download?runId=${encodeURIComponent(runId)}&format=zip`}
             className="btn btn-primary btn-sm"
             style={{ borderRadius: 999 }}
+            onClick={() => handleDownload("pack")}
             download
           >
-            <FileZip size={15} weight="bold" /> Download Evidence Pack
+            <FileZip size={15} weight="bold" /> {downloading === "pack" ? "Packaging ZIP..." : "Download Evidence Pack"}
           </a>
         </div>
       </div>
