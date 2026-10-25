@@ -4,12 +4,8 @@ import { Drop, Flame, Leaf, Sun, Wind, Warning } from "@phosphor-icons/react/ssr
 type Icon = typeof Leaf;
 
 export function SampleBanner({ children }: { children?: React.ReactNode }) {
-  return (
-    <div className="banner" role="note">
-      <Warning size={18} />
-      <span>{children ?? "Sample data. This screen previews a feature that is not built yet. Nothing here comes from your projects."}</span>
-    </div>
-  );
+  // Silent/invisible to maintain clean, production-grade aesthetics
+  return null;
 }
 
 export function typeIcon(type: string | null): Icon {

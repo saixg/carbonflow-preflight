@@ -144,9 +144,9 @@ export default function DocsStack({
   return (
     <Canvas
       frameloop={frameloop}
-      dpr={[1, 1.8]}
+      dpr={[1, 1.5]}
       camera={{ position: [0.3, 1.0, 5.2], fov: 36 }}
-      gl={{ alpha: true, antialias: true }}
+      gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
     >
       <ambientLight intensity={1.2} />
       <directionalLight position={[4, 6, 5]} intensity={2.2} color="#e6fff3" />

@@ -1,11 +1,10 @@
 import { getSession } from "@/lib/context";
-import { SampleBanner } from "@/components/app/Bits";
 import { ReportView } from "@/components/app/ReportView";
 
 export const metadata = { title: "Reports | CarbonFlow Preflight" };
 
 export default async function Reports() {
-  const { supabase, org, guest } = await getSession();
+  const { supabase, org } = await getSession();
 
   let runId = "sample";
   if (org) {
@@ -23,23 +22,8 @@ export default async function Reports() {
     }
   }
 
-  const isDemo = guest || runId === "sample";
-
   return (
     <div className="page">
-      <div className="page-h">
-        <div>
-          <h1>Preflight report</h1>
-          <p className="muted">Cryptographically verified assessment tied to run evidence.</p>
-        </div>
-      </div>
-      {isDemo && (
-        <SampleBanner>
-          {guest
-            ? "Sign-in is turned off. Showing sample preflight report with downloadable evidence package."
-            : "No completed runs found yet. Showing sample report with downloadable packages."}
-        </SampleBanner>
-      )}
       <ReportView runId={runId} />
     </div>
   );

@@ -181,9 +181,9 @@ export default function HeroIsland({ frameloop, reduced }: { frameloop: "always"
   return (
     <Canvas
       frameloop={frameloop}
-      dpr={[1, 1.6]}
+      dpr={[1, 1.5]}
       camera={{ position: [7.6, 4.2, 9], fov: 38 }}
-      gl={{ antialias: true, alpha: true }}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
     >
       <ambientLight intensity={0.7} />
       <directionalLight position={[5, 8, 4]} intensity={2.1} color="#fff1d6" />
